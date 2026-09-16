@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>감옥탈출</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+<style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0; min-height: 100vh; background: #141210;
+        display: flex; align-items: center; justify-content: center;
+        font-family: "Nanum Pen Script", system-ui, sans-serif;
+        overflow: hidden;
+    }
+    #stage { position: relative; width: min(100vw, 133.333vh); aspect-ratio: 4 / 3; }
+    #screen { width: 100%; height: 100%; display: block; cursor: none; background: #96a49f; }
+    #card {
+        position: absolute; inset: 0; margin: auto; width: min(78%, 620px); height: fit-content;
+        background: #fdfbf5; border: 3px solid #2b2118; border-radius: 6px;
+        padding: 28px 32px 32px; box-shadow: 8px 10px 0 rgba(0,0,0,0.35);
+    }
+    #card h1 { margin: 0 0 4px; font-size: 40px; font-weight: 400; color: #2b2118; }
+    #card p { margin: 0 0 20px; font-size: 24px; color: #7b6a5b; line-height: 1.5; }
+    label { display: block; font-size: 26px; color: #2b2118; margin-bottom: 4px; }
+    input {
+        width: 100%; margin-bottom: 16px; padding: 8px 12px;
+        font-family: inherit; font-size: 26px; color: #2b2118;
+        background: transparent; border: 0; border-bottom: 2px dashed #b3a595;
+    }
+    input:focus { outline: none; border-bottom-color: #2b2118; }
+    button {
+        font-family: inherit; font-size: 32px; color: #c0392b;
+        background: transparent; border: 3px solid #c0392b; border-radius: 4px;
+        padding: 4px 28px; cursor: pointer; transform: rotate(-3deg);
+    }
+    button:hover { background: #c0392b; color: #fdfbf5; }
+    #keys {
+        position: absolute; left: 0; right: 0; bottom: -28px;
+        text-align: center; font-size: 18px; color: #6b6259;
+    }
+</style>
+</head>
+<body>
+<div id="stage">
+    <canvas id="screen"></canvas>
+
+    <form id="card">
+        <h1>수감 기록</h1>
+        <p>마우스 피하기다. 함정을 피해 출구까지 가면 된다.</p>
+        <label for="name">이름</label>
+        <input id="name" value="범죄자" maxlength="12" autocomplete="off">
+        <label for="crime">죄목</label>
+        <input id="crime" value="이름 자체가 죄" maxlength="20" autocomplete="off">
+        <button type="submit">수감</button>
+    </form>
+
+    <div id="keys">H 판정 보기 · M 소리 끄기</div>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "escape",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "감옥탈출류 마우스 피하기 팬 게임",
+  "scripts": {
+    "test": "node --test",
+    "start": "python3 -m http.server 8173"
+  }
+}
