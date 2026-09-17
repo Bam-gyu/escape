@@ -76,7 +76,13 @@ function enterRoom(index) {
     game.roomIndex = index;
     game.screen = 'ready';
     game.enteredAt = performance.now();
-    game.last = null;
+
+    // 새 방의 첫 모습을 여기서 바로 만들어 둔다. <b>null로 비우면 안 된다.</b>
+    // 방을 통과했을 때만은 enterRoom이 update() 안에서 불려서, 같은 프레임의
+    // draw()가 그 null을 그대로 받는다. 그리기가 터지면 frame() 끝의
+    // requestAnimationFrame까지 못 가고 루프가 통째로 멎는다.
+    const spawn = ROOMS[index].spawn;
+    game.last = stepRoom(ROOMS[index], spawn.x, spawn.y, 0);
 
     // 방을 넘어가면 숨은 함정을 다시 잊는다. 방마다 새로 배우는 것이 맞다.
     game.revealed = new Set();
