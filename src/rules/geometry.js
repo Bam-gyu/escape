@@ -20,7 +20,7 @@ export function angleDelta(from, to) {
     return d;
 }
 
-/// 원이 부채꼴과 겹치는가. 간수의 시야에 쓴다.
+/// 원이 부채꼴과 겹치는가. 매니저와 경비의 시야에 쓴다.
 export function circleHitsSector(cx, cy, radius, sector) {
     const dx = cx - sector.x;
     const dy = cy - sector.y;
@@ -29,7 +29,7 @@ export function circleHitsSector(cx, cy, radius, sector) {
     if (distance > sector.radius + radius) return false;
 
     // 원이 부채꼴의 꼭짓점을 덮고 있으면 각도를 따질 것도 없다.
-    // 이걸 빼면 간수에게 바짝 붙었을 때 atan2가 흔들려 판정이 깜빡인다.
+    // 이걸 빼면 감시하는 쪽에 바짝 붙었을 때 atan2가 흔들려 판정이 깜빡인다.
     if (distance <= radius) return true;
 
     const toCircle = Math.atan2(dy, dx) * 180 / Math.PI;
@@ -43,4 +43,24 @@ export function circleHitsSector(cx, cy, radius, sector) {
 
 export function clamp(value, low, high) {
     return value < low ? low : (value > high ? high : value);
+}
+
+/// 원이 기울어진 사각형과 겹치는가. 돌아가는 차단바에 쓴다.
+///
+/// 새 판정을 짜지 않는다. 원의 중심을 사각형의 좌표계로 되돌려 놓으면
+/// 그 순간 축 정렬 사각형이 되어 위의 circleHitsRect가 그대로 맞는다.
+/// x·y는 사각형의 <b>중심</b>이고, angle은 도(度)다.
+export function circleHitsOrientedRect(cx, cy, radius, box) {
+    const a = -box.angle * Math.PI / 180;
+    const dx = cx - box.x;
+    const dy = cy - box.y;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+
+    return circleHitsRect(
+        dx * cos - dy * sin,
+        dx * sin + dy * cos,
+        radius,
+        { x: -box.w / 2, y: -box.h / 2, w: box.w, h: box.h },
+    );
 }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { circleHitsRect, circleHitsSector, angleDelta, clamp } from '../src/rules/geometry.js';
+import { circleHitsRect, circleHitsSector, circleHitsOrientedRect, angleDelta, clamp } from '../src/rules/geometry.js';
 
 const RECT = { x: 100, y: 100, w: 200, h: 50 };
 
@@ -64,4 +64,46 @@ test('clamp는 범위 밖을 끌어당긴다', () => {
     assert.equal(clamp(5, 10, 20), 10);
     assert.equal(clamp(25, 10, 20), 20);
     assert.equal(clamp(15, 10, 20), 15);
+});
+
+test('각도가 0이면 기울어진 사각형은 그냥 사각형이다', () => {
+    // x·y가 중심인 것만 다르다. 같은 자리를 가리키면 같은 답이 나와야 한다.
+    const box = { x: 100, y: 100, w: 60, h: 20, angle: 0 };
+    const plain = { x: 70, y: 90, w: 60, h: 20 };
+
+    for (const [px, py] of [[100, 100], [69, 100], [100, 79], [200, 200], [131, 100]]) {
+        assert.equal(
+            circleHitsOrientedRect(px, py, 7, box),
+            circleHitsRect(px, py, 7, plain),
+            `(${px}, ${py})에서 답이 다르다`,
+        );
+    }
+});
+
+test('돌린 막대는 돌아간 쪽만 맞춘다', () => {
+    // 가로로 누운 길이 200짜리 막대를 90도 돌리면 세로로 선다.
+    const lying = { x: 0, y: 0, w: 200, h: 20, angle: 0 };
+    const standing = { x: 0, y: 0, w: 200, h: 20, angle: 90 };
+
+    assert.equal(circleHitsOrientedRect(80, 0, 5, lying), true);
+    assert.equal(circleHitsOrientedRect(80, 0, 5, standing), false);
+
+    assert.equal(circleHitsOrientedRect(0, 80, 5, standing), true);
+    assert.equal(circleHitsOrientedRect(0, 80, 5, lying), false);
+});
+
+test('막대 끝 너머는 안 닿는다', () => {
+    const bar = { x: 0, y: 0, w: 200, h: 20, angle: 0 };
+
+    assert.equal(circleHitsOrientedRect(104, 0, 5, bar), true, '끝에서 4 떨어진 곳은 반지름 5에 닿는다');
+    assert.equal(circleHitsOrientedRect(112, 0, 5, bar), false, '끝에서 12 떨어진 곳은 안 닿는다');
+});
+
+test('45도로 돌린 막대의 모서리', () => {
+    const bar = { x: 0, y: 0, w: 200, h: 20, angle: 45 };
+    const far = 100 / Math.SQRT2;
+
+    // 막대를 따라간 자리는 닿고, 그 자리에서 직각으로 벗어나면 안 닿는다.
+    assert.equal(circleHitsOrientedRect(far, far, 4, bar), true);
+    assert.equal(circleHitsOrientedRect(far - 30, far + 30, 4, bar), false);
 });
