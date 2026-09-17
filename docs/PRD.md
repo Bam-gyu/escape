@@ -227,6 +227,7 @@ Re에는 SFX 26개, BGM 12개가 더 있다. 전부 mp3라 변환 없이 바로 
 
 ## 11. 더 읽을 것
 
+- `docs/hazard-guide.md` — **함정 놓는 법.** 방을 짜려면 이걸 본다
 - `docs/art-guide.md` — **그림 준비법**
 - `README.md` — 사용법
 - `docs/superpowers/specs/2026-09-17-idol-dorm-escape-design.md` — 이번 작업의 설계
