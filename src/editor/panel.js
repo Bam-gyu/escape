@@ -173,7 +173,7 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
     canvas.addEventListener('mousedown', e => {
         if (!game.admin) return;
         const at = toGameCoords(e);
-        selection = pickAt(room(), at.x, at.y);
+        selection = pickAt(room(), at.x, at.y, game.editTime);
         dragging = selection ? at : null;
         drawInspector();
     });
@@ -344,7 +344,7 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
         ctx.strokeStyle = '#8fd8a8';
         ctx.stroke();
 
-        const outline = outlineOf(room(), selection);
+        const outline = outlineOf(room(), selection, game.editTime);
         if (outline) {
             ctx.strokeStyle = '#ff9ec4';
             ctx.lineWidth = 3;

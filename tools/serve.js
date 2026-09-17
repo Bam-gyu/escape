@@ -101,7 +101,33 @@ function summarize(output) {
     return [...counts, ...failures].join('\n').trim();
 }
 
+/// 이 서버에 말을 걸어도 되는 곳인가.
+///
+/// <b>127.0.0.1에만 여는 것으로는 모자란다.</b> 그건 다른 컴퓨터를 막을 뿐,
+/// 같은 컴퓨터의 브라우저에서 나가는 요청은 못 막는다. npm start를 켜둔 채
+/// 아무 웹페이지나 열면 그 페이지가 /api/rooms에 POST를 던져 방을 통째로
+/// 덮어쓸 수 있다. 주소를 127.0.0.1로 돌려놓는 수법(DNS rebinding)도 같은 문이다.
+///
+/// 그래서 셋을 본다. Host가 이 서버인가, Origin이 이 서버인가,
+/// 그리고 진짜 JSON인가 — 남의 페이지에서 오는 단순 요청은 JSON이라고 말할 수 없다.
+function isOurs(req) {
+    const allowed = [`localhost:${PORT}`, `127.0.0.1:${PORT}`, `[::1]:${PORT}`];
+    if (!allowed.includes(req.headers.host)) return false;
+
+    const origin = req.headers.origin;
+    if (origin && !allowed.some(host => origin === `http://${host}`)) return false;
+
+    return (req.headers['content-type'] ?? '').startsWith('application/json');
+}
+
 async function saveRooms(req, res) {
+    if (!isOurs(req)) {
+        return send(res, 403, JSON.stringify({
+            ok: false,
+            message: '이 서버가 연 화면에서만 저장할 수 있다.',
+        }));
+    }
+
     let rooms;
     try {
         rooms = JSON.parse(await readBody(req)).rooms;

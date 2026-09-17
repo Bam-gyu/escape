@@ -148,30 +148,43 @@ addEventListener('keydown', event => {
     if (key === 'm') audio.setMuted(!audio.muted);
 });
 
+/// 편집기는 <b>내 컴퓨터에서 띄웠을 때만</b> 열린다.
+///
+/// 이 게임은 빌드가 없는 정적 파일이라 src/editor도 올린 곳에 그대로 따라간다.
+/// 막지 않으면 올려둔 게임에서 누가 H를 눌러 무적이 되고 편집기를 연다.
+/// 저장은 어차피 안 되지만(서버가 없다), 게임이 게임이 아니게 된다.
+const IS_LOCAL = ['localhost', '127.0.0.1', '[::1]', ''].includes(location.hostname);
+
+/// 불러오는 중이라는 표시. <b>하나로 묶어 두지 않으면</b> 다 불러오기 전에 H를
+/// 두 번 누른 만큼 편집기가 겹쳐 만들어지고, 그만큼 리스너가 붙어서
+/// 한 번 끌어다 놓은 것이 둘이 된다.
+let editorLoading = null;
+
 /// H. 판정 보기와 방 편집기를 함께 연다.
 ///
 /// 원래 H가 하던 일(판정을 빨간 선으로 보기)이 곧 "방 짜는 모드"였다.
 /// 둘을 한 키로 묶은 것은 기억할 키를 늘리지 않으려는 것이다.
 async function toggleAdmin() {
+    if (!IS_LOCAL) return;
+
     game.admin = !game.admin;
     game.showHitboxes = game.admin;
 
-    if (game.admin) {
-        // 타이틀이나 연출 중에 눌렀어도 곧장 방으로 들어간다.
-        titleScreen.hidden = true;
-        introScreen.hidden = true;
-        if (game.screen !== 'play') { enterRoom(game.roomIndex); game.screen = 'play'; }
+    if (!game.admin) { game.editor?.setOpen(false); return; }
 
-        if (!game.editor) {
-            const { createEditor } = await import('./editor/panel.js');
-            game.editor = createEditor({
-                canvas, game, rooms: ROOMS, toGameCoords,
-                goToRoom: index => { enterRoom(index); game.screen = 'play'; game.editTime = 0; },
-            });
-        }
-    }
+    // 타이틀이나 연출 중에 눌렀어도 곧장 방으로 들어간다.
+    titleScreen.hidden = true;
+    introScreen.hidden = true;
+    if (game.screen !== 'play') { enterRoom(game.roomIndex); game.screen = 'play'; }
 
-    game.editor?.setOpen(game.admin);
+    editorLoading ??= import('./editor/panel.js').then(({ createEditor }) => createEditor({
+        canvas, game, rooms: ROOMS, toGameCoords,
+        goToRoom: index => { enterRoom(index); game.screen = 'play'; game.editTime = 0; },
+    }));
+    game.editor = await editorLoading;
+
+    // 불러오는 사이에 다시 껐을 수도 있다. 지금 상태를 따른다.
+    game.editor.setOpen(game.admin);
 }
 
 /// 들킨 뒤 다시 시작. 방을 새로 여는 것과 달리 <b>드러난 함정은 기억한다.</b>

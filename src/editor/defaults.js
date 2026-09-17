@@ -82,12 +82,24 @@ export const DRAWERS = [
 
 export const isProp = art => PROP_ARTS.includes(art);
 
+/// x·y가 <b>가운데</b>를 뜻하는 종류. 나머지는 왼쪽 위 모서리다.
+/// 이 갈림이 편집기에서 가장 자주 사고를 내는 자리라 한 곳에 모아 둔다.
+export const isCentered = kind => kind === 'cone' || kind === 'spinner';
+
+/// 화면에서 보이는 가운데. 종류가 달라도 이걸로 견주면 자리가 안 어긋난다.
+export function centerOf(item) {
+    if (isCentered(item.kind)) return { x: item.x, y: item.y };
+    return { x: item.x + (item.w ?? 0) / 2, y: item.y + (item.h ?? 0) / 2 };
+}
+
 /// 종류마다의 기본 숫자. 놓자마자 움직이고 보이는 값이라야 한다 —
 /// period 0짜리로 놓이면 화면에서 아무 일도 안 일어나 고장으로 보인다.
+///
+/// x·y는 <b>놓은 자리가 가운데에 오게</b> 맞춘다. 상자 크기를 바꾸는 종류는
+/// 그 바뀐 크기로 맞춰야 한다 — 기본 크기로 밀어놓고 상자만 갈면 딴 데 놓인다.
 function base(kind, x, y, art) {
     const spec = ART[art] ?? {};
-    const w = spec.w ?? 110;
-    const h = spec.h ?? 80;
+    const corner = (w, h, rest) => ({ kind, x: Math.round(x - w / 2), y: Math.round(y - h / 2), w, h, ...rest, art });
 
     if (kind === 'cone') {
         return { kind, x, y, radius: 160, spread: 46, from: 55, to: 125, period: 3.4, art };
@@ -95,13 +107,9 @@ function base(kind, x, y, art) {
     if (kind === 'spinner') {
         return { kind, x, y, length: 260, thickness: 22, period: 4, art };
     }
-    if (kind === 'mover') {
-        return { kind, x: x - w / 2, y: y - h / 2, w: 140, h: 34, dx: 240, period: 4.4, art };
-    }
-    if (kind === 'blink') {
-        return { kind, x: x - w / 2, y: y - h / 2, w, h, period: 2, on: 1, art };
-    }
-    return { kind, x: x - w / 2, y: y - h / 2, w, h, art };
+    if (kind === 'mover') return corner(140, 34, { dx: 240, period: 4.4 });
+    if (kind === 'blink') return corner(spec.w ?? 110, spec.h ?? 80, { period: 2, on: 1 });
+    return corner(spec.w ?? 110, spec.h ?? 80, {});
 }
 
 /// 그림 하나를 x·y에 놓았을 때 생기는 것.
@@ -120,11 +128,14 @@ export function makeItem(art, x, y) {
 }
 
 /// 종류를 바꾼다. 같은 이름의 값은 그대로 두고, 새로 필요한 것만 채운다.
-/// 자리를 지키는 것이 중요하다 — 종류를 바꿨다고 함정이 화면 반대쪽으로 뛰면
-/// 무엇이 바뀐 건지 알 수 없다.
+///
+/// <b>화면에서 보이는 가운데를 지킨다.</b> x·y를 그대로 베끼면 안 된다 —
+/// 부채꼴의 x·y는 가운데고 상자의 x·y는 왼쪽 위라, 숫자만 옮기면 종류를 바꾼
+/// 순간 함정이 제 크기의 절반만큼 뛴다. 무엇이 바뀐 건지 알 수 없게 된다.
 export function changeKind(item, kind) {
-    const fresh = base(kind, item.x, item.y, item.art);
-    const next = { kind, x: item.x, y: item.y, art: item.art };
+    const center = centerOf(item);
+    const fresh = base(kind, center.x, center.y, item.art);
+    const next = { kind, x: fresh.x, y: fresh.y, art: item.art };
 
     for (const field of KINDS[kind].fields) {
         if (field === 'x' || field === 'y') continue;
@@ -135,6 +146,12 @@ export function changeKind(item, kind) {
     // 종류를 한 번 바꿨다고 rooms.js에 0이 줄줄이 붙는다.
     for (const field of KINDS[kind].extras) {
         if (item[field] !== undefined) next[field] = item[field];
+    }
+
+    // 상자 크기를 물려받았으면 그 크기로 가운데를 다시 맞춘다.
+    if (next.w !== undefined) {
+        next.x = Math.round(center.x - next.w / 2);
+        next.y = Math.round(center.y - next.h / 2);
     }
 
     if (item.hidden) next.hidden = true;

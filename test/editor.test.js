@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { pickAt, itemOf, moveBy, removeFrom, outlineOf } from '../src/editor/pick.js';
-import { makeItem, changeKind, isProp, KINDS } from '../src/editor/defaults.js';
+import { makeItem, changeKind, isProp, centerOf, KINDS } from '../src/editor/defaults.js';
 
 const room = () => ({
     name: '검사용',
@@ -129,4 +129,69 @@ test('소품과 함정을 가른다', () => {
     assert.equal(isProp('guard'), false);
     assert.equal(makeItem('sofa', 400, 300).kind, undefined);
     assert.equal(makeItem('sofa', 400, 300).name, 'sofa');
+});
+
+// ── 보이는 자리에서 집힌다 ─────────────────────────────────────
+// 함정이 든 x·y가 아니라 "지금 이 순간의 모양"으로 집어야 한다.
+// 이게 어긋나면 화면에서 카트가 보이는 곳을 눌러도 안 집히고,
+// 아무것도 없어 보이는 허공에서 집힌다.
+
+const movingRoom = () => ({
+    name: '움직이는 방',
+    spawn: { x: 480, y: 650 },
+    exit: { x: 890, y: 535, w: 60, h: 105 },
+    hazards: [{ kind: 'mover', x: 100, y: 500, w: 140, h: 34, dx: 300, period: 4 }],
+    props: [],
+});
+
+test('오가는 것은 지금 있는 자리에서 집힌다', () => {
+    // period 4짜리 왕복의 절반이면 dx를 다 간 자리, 곧 x=400이다.
+    const r = movingRoom();
+    assert.deepEqual(pickAt(r, 410, 510, 2), { what: 'hazard', index: 0 });
+    assert.equal(pickAt(r, 110, 510, 2), null);
+
+    // 시각 0에서는 원래 자리에 있다.
+    assert.deepEqual(pickAt(r, 110, 510, 0), { what: 'hazard', index: 0 });
+});
+
+test('테두리도 지금 있는 자리에 나온다', () => {
+    const r = movingRoom();
+    assert.equal(outlineOf(r, { what: 'hazard', index: 0 }, 2).x, 400);
+    assert.equal(outlineOf(r, { what: 'hazard', index: 0 }, 0).x, 100);
+});
+
+test('끌어서 옮기면 왕복의 기준점이 따라온다', () => {
+    const r = movingRoom();
+    moveBy(itemOf(r, pickAt(r, 410, 510, 2)), 50, 0);
+    assert.equal(r.hazards[0].x, 150);
+    assert.deepEqual(pickAt(r, 460, 510, 2), { what: 'hazard', index: 0 });
+});
+
+test('어떤 그림을 놓아도 누른 자리가 가운데다', () => {
+    for (const art of ['cart', 'sensor', 'crack', 'tteokbokki', 'wall']) {
+        const item = makeItem(art, 400, 300);
+        if (item.w === undefined) continue;
+        assert.equal(item.x + item.w / 2, 400, `${art}의 가로 가운데가 어긋난다`);
+        assert.equal(item.y + item.h / 2, 300, `${art}의 세로 가운데가 어긋난다`);
+    }
+});
+
+test('종류를 바꿔도 화면에서 보이는 가운데가 그대로다', () => {
+    // 상자의 x·y는 왼쪽 위, 부채꼴의 x·y는 가운데다. 숫자만 베끼면
+    // 종류를 바꾼 순간 함정이 제 크기의 절반만큼 뛴다.
+    const box = makeItem('crack', 400, 300);
+    assert.deepEqual(centerOf(changeKind(box, 'cone')), { x: 400, y: 300 });
+    assert.deepEqual(centerOf(changeKind(box, 'spinner')), { x: 400, y: 300 });
+
+    const cone = makeItem('guard', 400, 300);
+    assert.deepEqual(centerOf(changeKind(cone, 'rect')), { x: 400, y: 300 });
+    assert.deepEqual(centerOf(changeKind(cone, 'mover')), { x: 400, y: 300 });
+});
+
+test('종류를 오가며 바꿔도 자리가 흘러가지 않는다', () => {
+    let item = makeItem('crack', 400, 300);
+    for (const kind of ['cone', 'rect', 'spinner', 'blink', 'mover', 'rect']) {
+        item = changeKind(item, kind);
+    }
+    assert.deepEqual(centerOf(item), { x: 400, y: 300 });
 });
