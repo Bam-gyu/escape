@@ -35,8 +35,10 @@
 
 export const ROOMS = [
     {
-        // 첫 방. 시야 하나만 배운다. 다른 함정은 벽뿐이다.
-        // 출구가 처음부터 오른쪽에 있어서 "위로 가면 된다"는 습관이 안 생긴다.
+        note: [
+            '첫 방. 시야 하나만 배운다. 다른 함정은 벽뿐이다.',
+            '출구가 처음부터 오른쪽에 있어서 "위로 가면 된다"는 습관이 안 생긴다.',
+        ],
         name: '헬스장',
         background: 'bgGym',
         spawn: { x: 480, y: 650 },
@@ -50,7 +52,7 @@ export const ROOMS = [
         ],
     },
     {
-        // 오가는 청소 카트를 배운다.
+        note: ['오가는 청소 카트를 배운다.'],
         name: '헬스장 외부',
         background: 'bgStreet',
         spawn: { x: 480, y: 650 },
@@ -58,7 +60,7 @@ export const ROOMS = [
         hazards: [
             { kind: 'rect', x: 0, y: 0, w: 434, h: 192, inBackground: true },
             { kind: 'rect', x: 526, y: 0, w: 434, h: 192, inBackground: true },
-            { kind: 'mover', x: 250, y: 560, w: 140, h: 34, dx: 300, period: 4.4, art: 'cart' },
+            { kind: 'mover', x: 250, y: 560, w: 140, h: 34, period: 4.4, dx: 300, art: 'cart' },
             { kind: 'cone', x: 745, y: 300, radius: 165, spread: 48, from: 105, to: 165, period: 3.4, art: 'guard' },
         ],
         props: [
@@ -67,11 +69,13 @@ export const ROOMS = [
         ],
     },
     {
-        // 목적지. 음식 미끼가 여기에만 있다.
-        //
-        // 맛있어 보이지만 닿으면 붙잡힌다. 간식을 사러 온 사람이 간식에 혹해
-        // 붙잡힌다는 것이 이 게임 설정과 맞는 농담이다. 새 함정 종류를 만들지
-        // 않았다 — 그냥 rect에 음식 그림을 얹은 것이다.
+        note: [
+            '목적지. 음식 미끼가 여기에만 있다.',
+            '',
+            '맛있어 보이지만 닿으면 붙잡힌다. 간식을 사러 온 사람이 간식에 혹해',
+            '붙잡힌다는 것이 이 게임 설정과 맞는 농담이다. 새 함정 종류를 만들지',
+            '않았다 — 그냥 rect에 음식 그림을 얹은 것이다.',
+        ],
         name: '편의점',
         background: 'bgStore',
         spawn: { x: 480, y: 650 },
@@ -79,11 +83,9 @@ export const ROOMS = [
         hazards: [
             { kind: 'rect', x: 0, y: 0, w: 434, h: 232, inBackground: true },
             { kind: 'rect', x: 526, y: 0, w: 434, h: 232, inBackground: true },
-
             { kind: 'rect', x: 225, y: 470, w: 120, h: 96, art: 'tteokbokki' },
             { kind: 'rect', x: 620, y: 465, w: 120, h: 96, art: 'chicken' },
             { kind: 'rect', x: 290, y: 320, w: 84, h: 104, art: 'ramen' },
-
             { kind: 'cone', x: 245, y: 300, radius: 155, spread: 48, from: 15, to: 75, period: 3.2, art: 'guard' },
             { kind: 'cone', x: 715, y: 305, radius: 155, spread: 48, from: 105, to: 165, period: 2.8, offset: 0.7, art: 'manager' },
         ],
@@ -93,7 +95,7 @@ export const ROOMS = [
         ],
     },
     {
-        // 돌아가는 차단바를 배운다. 숙소 주차장 입구의 그것이다.
+        note: ['돌아가는 차단바를 배운다. 숙소 주차장 입구의 그것이다.'],
         name: '숙소 외부',
         background: 'bgDorm',
         spawn: { x: 480, y: 650 },
@@ -101,8 +103,8 @@ export const ROOMS = [
         hazards: [
             { kind: 'rect', x: 0, y: 0, w: 432, h: 212, inBackground: true },
             { kind: 'rect', x: 528, y: 0, w: 432, h: 212, inBackground: true },
-            { kind: 'spinner', x: 480, y: 400, length: 300, thickness: 22, period: 5.0, art: 'gate' },
-            { kind: 'mover', x: 150, y: 545, w: 140, h: 34, dx: 430, period: 5.4, offset: 0.8, art: 'cart' },
+            { kind: 'spinner', x: 480, y: 400, length: 300, thickness: 22, period: 5, art: 'gate' },
+            { kind: 'mover', x: 150, y: 545, w: 140, h: 34, period: 5.4, dx: 430, offset: 0.8, art: 'cart' },
             { kind: 'cone', x: 215, y: 265, radius: 150, spread: 48, from: 35, to: 95, period: 3.4, art: 'guard' },
         ],
         props: [
@@ -111,8 +113,10 @@ export const ROOMS = [
         ],
     },
     {
-        // 센서와 순찰을 함께 배운다. 문은 왼쪽 위다.
-        // 걷는 주기와 보는 주기를 일부러 어긋나게 둬서 안전한 쪽이 고정되지 않는다.
+        note: [
+            '센서와 순찰을 함께 배운다. 문은 왼쪽 위다.',
+            '걷는 주기와 보는 주기를 일부러 어긋나게 둬서 안전한 쪽이 고정되지 않는다.',
+        ],
         name: '숙소 거실',
         background: 'bgLiving',
         spawn: { x: 480, y: 650 },
@@ -120,8 +124,8 @@ export const ROOMS = [
         hazards: [
             { kind: 'rect', x: 0, y: 0, w: 34, h: 166, inBackground: true },
             { kind: 'rect', x: 118, y: 0, w: 842, h: 166, inBackground: true },
-            { kind: 'blink', x: 470, y: 300, w: 48, h: 60, period: 2.0, on: 1.0, art: 'sensor' },
-            { kind: 'mover', x: 260, y: 480, w: 140, h: 34, dx: 280, period: 5.2, art: 'cart' },
+            { kind: 'blink', x: 470, y: 300, w: 48, h: 60, period: 2, on: 1, art: 'sensor' },
+            { kind: 'mover', x: 260, y: 480, w: 140, h: 34, period: 5.2, dx: 280, art: 'cart' },
             { kind: 'cone', x: 700, y: 215, radius: 170, spread: 48, from: 115, to: 175, period: 3.2, dx: -420, walkPeriod: 6.2, art: 'manager' },
         ],
         props: [
@@ -130,24 +134,24 @@ export const ROOMS = [
         ],
     },
     {
-        // 마지막. 다 왔는데 여기서 들킨다. 전부 나오고, 안 보이는 함정도 여기에만 있다.
-        //
-        // 숨은 것 둘은 시작 자리에서 멀리 둔다. 들어서자마자 당하면
-        // 뭘 잘못했는지 알 수 없는 죽음이 된다.
+        note: [
+            '마지막. 다 왔는데 여기서 들킨다. 전부 나오고, 안 보이는 함정도 여기에만 있다.',
+            '',
+            '숨은 것 둘은 시작 자리에서 멀리 둔다. 들어서자마자 당하면',
+            '뭘 잘못했는지 알 수 없는 죽음이 된다. 목록 끝의 hidden 둘이 그것이다.',
+        ],
         name: '주인공 방',
         background: 'bgRoom',
         spawn: { x: 480, y: 650 },
         exit: { x: 790, y: 185, w: 110, h: 52, art: 'exitSide' },
         hazards: [
             { kind: 'rect', x: 0, y: 0, w: 960, h: 150, inBackground: true },
-            { kind: 'cone', x: 480, y: 205, radius: 190, spread: 46, from: 55, to: 125, period: 3.0, dx: 220, walkPeriod: 5.6, art: 'manager' },
+            { kind: 'cone', x: 480, y: 205, radius: 190, spread: 46, from: 55, to: 125, period: 3, dx: 220, walkPeriod: 5.6, art: 'manager' },
             { kind: 'spinner', x: 400, y: 400, length: 280, thickness: 22, period: 3.2, art: 'gate' },
             { kind: 'blink', x: 620, y: 330, w: 48, h: 60, period: 1.8, on: 0.9, offset: 0.6, art: 'sensor' },
-            { kind: 'mover', x: 120, y: 545, w: 140, h: 34, dx: 560, period: 3.6, art: 'cart' },
-
-            // 안 보이는 것들. 당하면 그 방에 있는 동안 드러난다.
-            { kind: 'rect', x: 700, y: 470, w: 90, h: 24, hidden: true, art: 'crack' },
-            { kind: 'blink', x: 250, y: 300, w: 120, h: 26, period: 2.8, on: 1.1, offset: 1.4, hidden: true, art: 'crack' },
+            { kind: 'mover', x: 120, y: 545, w: 140, h: 34, period: 3.6, dx: 560, art: 'cart' },
+            { kind: 'rect', x: 700, y: 470, w: 90, h: 24, art: 'crack', hidden: true },
+            { kind: 'blink', x: 250, y: 300, w: 120, h: 26, period: 2.8, on: 1.1, offset: 1.4, art: 'crack', hidden: true },
         ],
         props: [
             { name: 'locker', x: 60, y: 200, w: 160, h: 115 },

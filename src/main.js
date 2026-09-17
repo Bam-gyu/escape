@@ -52,6 +52,16 @@ const game = {
     last: null,
     showHitboxes: false,
 
+    /// 방을 짜는 동안만 켜는 모드. H로 연다. <b>배포본에는 안 실린다</b> —
+    /// 편집기는 여기서 처음 켤 때 import()로 불러오므로, 안 켜면 내려받지도 않는다.
+    admin: false,
+    editor: null,
+
+    /// 관리자 모드의 시계. 흐르는 시간을 세우고 되감을 수 있어야
+    /// 움직이는 함정을 눈으로 잡을 수 있다.
+    editTime: 0,
+    editPaused: false,
+
     /// 이 방에서 나를 이미 한 번 들키게 한 숨은 함정들의 번호.
     /// <b>기억은 여기가 든다.</b> 함정에 들리면 되감기도 건너뛰기도 안 되고,
     /// 다시 시작할 때 함정을 되돌리는 코드가 따로 필요해진다.
@@ -131,10 +141,38 @@ canvas.addEventListener('click', () => {
 });
 
 addEventListener('keydown', event => {
+    if (event.target instanceof HTMLInputElement) return;
+
     const key = event.key.toLowerCase();
-    if (key === 'h') game.showHitboxes = !game.showHitboxes;
+    if (key === 'h') toggleAdmin();
     if (key === 'm') audio.setMuted(!audio.muted);
 });
+
+/// H. 판정 보기와 방 편집기를 함께 연다.
+///
+/// 원래 H가 하던 일(판정을 빨간 선으로 보기)이 곧 "방 짜는 모드"였다.
+/// 둘을 한 키로 묶은 것은 기억할 키를 늘리지 않으려는 것이다.
+async function toggleAdmin() {
+    game.admin = !game.admin;
+    game.showHitboxes = game.admin;
+
+    if (game.admin) {
+        // 타이틀이나 연출 중에 눌렀어도 곧장 방으로 들어간다.
+        titleScreen.hidden = true;
+        introScreen.hidden = true;
+        if (game.screen !== 'play') { enterRoom(game.roomIndex); game.screen = 'play'; }
+
+        if (!game.editor) {
+            const { createEditor } = await import('./editor/panel.js');
+            game.editor = createEditor({
+                canvas, game, rooms: ROOMS, toGameCoords,
+                goToRoom: index => { enterRoom(index); game.screen = 'play'; game.editTime = 0; },
+            });
+        }
+    }
+
+    game.editor?.setOpen(game.admin);
+}
 
 /// 들킨 뒤 다시 시작. 방을 새로 여는 것과 달리 <b>드러난 함정은 기억한다.</b>
 /// 이게 없으면 안 보이는 함정이 배울 수 없는 것이 되어 그냥 운이 된다.
@@ -208,9 +246,14 @@ function update(now) {
 
     if (game.screen !== 'play') return;
 
-    const t = (now - game.enteredAt) / 1000;
+    // 관리자 모드에서는 편집기의 시계를 쓴다. 멈춘 시간 위에 함정을 놓을 수 있어야 한다.
+    const t = game.admin ? game.editTime : (now - game.enteredAt) / 1000;
     const state = stepRoom(room(), game.pointer.x, game.pointer.y, t);
     game.last = state;
+
+    // 방을 짜는 동안에는 들키지도, 통과하지도 않는다. 함정을 놓으려고 커서를
+    // 그 위로 가져가는 것이 곧 죽음이면 아무것도 놓을 수 없다.
+    if (game.admin) return;
 
     if (state.dead) {
         game.deaths++;
@@ -368,6 +411,7 @@ function draw() {
     drawHud();
 
     if (game.showHitboxes) drawGrid();
+    if (game.admin) game.editor?.drawOverlay(ctx);
     if (game.screen === 'ready') drawReadyMark();
     if (game.screen === 'dead') drawDead();
     if (game.screen === 'clear') drawClear();
@@ -395,6 +439,11 @@ function walkFrame() {
 }
 
 function frame(now) {
+    if (game.admin && !game.editPaused) {
+        game.editTime += game.lastFrameAt ? (now - game.lastFrameAt) / 1000 : 0;
+        game.editor?.tick();
+    }
+
     advanceWalk(now);
     update(now);
     draw();
