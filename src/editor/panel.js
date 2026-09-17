@@ -125,6 +125,8 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
         game.editPaused = true;
         $('ed-pause').textContent = '이어서';
         game.editTime = Number(scrub.value);
+        // 멈춘 동안에는 tick이 안 도니 여기서 직접 적는다.
+        clock.textContent = `${game.editTime.toFixed(1)}초`;
     });
 
     // ── 서랍 ─────────────────────────────────────────────────
