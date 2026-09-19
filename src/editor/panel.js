@@ -182,7 +182,7 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
             selection = { what: 'hazard', index: room().hazards.length - 1 };
         }
 
-        say(`${art}을(를) 놓았다.`);
+        say(`${ART_LABEL[art] ?? art}을(를) 놓았다.`);
         drawInspector();
     });
 
