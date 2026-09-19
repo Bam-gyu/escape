@@ -43,6 +43,8 @@ const CSS = `
 #ed-status.good { color: #8fd8a8; }
 
 #ed-time { display: flex; gap: 8px; align-items: center; }
+#ed-view label { display: flex; gap: 6px; align-items: center; cursor: pointer; color: #cfd8e6; }
+#ed-view .help { display: block; margin-top: 3px; font-size: 10px; color: #5c6779; line-height: 1.3; }
 #ed-time input[type=range] { flex: 1; }
 
 .drawer { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
@@ -87,6 +89,10 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
             <input type="range" id="ed-scrub" min="0" max="15" step="0.05" value="0">
             <span id="ed-clock">0.0초</span>
         </section>
+        <section id="ed-view">
+            <label><input type="checkbox" id="ed-player" checked> 주인공 보이기</label>
+            <span class="help">함정 위에 겹쳐 서면 그 함정을 볼 수 없다. 그럴 때 끈다</span>
+        </section>
         <div class="scroll">
             <section id="ed-drawers"></section>
             <section id="ed-inspector"></section>
@@ -127,6 +133,10 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
         game.editPaused = !game.editPaused;
         $('ed-pause').textContent = game.editPaused ? '이어서' : '멈춤';
     });
+    // 주인공 켜고 끄기. 커서를 따라다니는 게임이라 손을 치울 수가 없어서,
+    // 함정 위에 겹쳐 선 주인공을 비키게 할 방법이 이것뿐이다.
+    $('ed-player').addEventListener('change', e => { game.showPlayer = e.target.checked; });
+
     scrub.addEventListener('input', () => {
         game.editPaused = true;
         $('ed-pause').textContent = '이어서';
@@ -380,7 +390,10 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
     function setOpen(open) {
         panel.hidden = !open;
         document.body.classList.toggle('editing', open);
-        if (open) drawInspector();
+        if (open) {
+            $('ed-player').checked = game.showPlayer;
+            drawInspector();
+        }
     }
 
     /// 화면의 시계 표시. 그리기 루프가 매 프레임 부른다.

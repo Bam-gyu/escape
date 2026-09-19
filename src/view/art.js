@@ -44,10 +44,15 @@ export const ART = {
     exit: { src: 'art/exit.png' },
     exitSide: { src: 'art/exitSide.png', fit: 'contain' },
 
-    // 음식 미끼 — 맛있어 보이지만 닿으면 붙잡힌다. 마지막 방에만 있다
-    tteokbokki: { src: 'art/tteokbokki.png' },
-    chicken: { src: 'art/chicken.png' },
-    ramen: { src: 'art/ramen.png' },
+    // 음식 미끼 — 맛있어 보이지만 닿으면 붙잡힌다. 편의점에만 있다.
+    //
+    // w·h는 <b>편집기가 끌어다 놓을 때 쓰는 크기</b>다. 방에 이미 놓인 것의
+    // 크기는 rooms.js가 들고 있어서 여기를 고쳐도 안 바뀐다.
+    // 그림 비율 그대로 적는다 — 안 그러면 놓자마자 찌그러진 음식이 나온다.
+    tteokbokki: { src: 'art/tteokbokki.png', w: 120, h: 96 },
+    chicken: { src: 'art/chicken.png', w: 126, h: 98 },
+    ramen: { src: 'art/ramen.png', w: 84, h: 96 },
+    icecream: { src: 'art/icecream.png', w: 120, h: 96 },
 
     // 오프닝 연출 — 960×720 한 장씩. 불을 끄고 방에서 몰래 나간다
     openLightOn: { src: 'art/open-light-on.png' },
@@ -85,7 +90,7 @@ export const ART_LABEL = {
     watch1: '감시1', watch2: '감시2', watch3: '감시3', watch4: '감시4',
     cart: '카트', gate: '차단바', sensor: '센서', lamp: '복도등',
     rail: '난간', wall: '벽', crack: '갈라진 곳',
-    tteokbokki: '떡볶이', chicken: '치킨', ramen: '라면',
+    tteokbokki: '떡볶이', chicken: '치킨', ramen: '라면', icecream: '아이스크림',
     sofa: '소파', vending: '자판기', plant: '화분', locker: '사물함',
     shoes: '신발', car: '차', trash: '쓰레기통', sign: '간판',
 };

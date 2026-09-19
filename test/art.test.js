@@ -21,14 +21,60 @@ test('감시자 그림이 네 장 다 있다', () => {
     }
 });
 
+const FOOD = ['tteokbokki', 'chicken', 'ramen', 'icecream'];
+
 test('사람 그림은 표시 크기와 비율이 같다', () => {
-    // 상자에 맞춰 늘여 그리는 방식이라, 비율이 어긋나면 사람이 옆으로 퍼진다.
-    // 화면에서 작게 나오는 그림이라 눈으로는 잘 안 잡힌다. 그래서 검사가 본다.
     for (const name of ['idol', ...WATCHERS]) {
         const spec = ART[name];
         const file = sizeOf(at(spec.src));
         assert.equal(file.w / file.h, spec.w / spec.h,
             `${name}: 파일은 ${file.w}×${file.h}인데 표시는 ${spec.w}×${spec.h}다`);
+    }
+});
+
+test('음식은 방에 놓인 상자와 그림 비율이 같다', async () => {
+    // <b>화면 크기를 정하는 것은 ART가 아니라 rooms.js다.</b> 그림은 함정 상자에
+    // 늘여 붙여진다. 그래서 ART의 w·h만 보면 검사가 헛돈다 — 실제로 그려지는
+    // 상자를 봐야 찌그러진 음식을 잡는다.
+    //
+    // 사람·벽·난간은 안 본다. 벽과 난간은 조각을 이어 붙이는 것이고,
+    // 차단바나 갈라진 곳은 길이를 방이 정하는 장치다. 음식은 생긴 모양이
+    // 정해져 있어서 늘어나면 바로 이상해 보인다.
+    const { ROOMS } = await import('../src/data/rooms.js');
+
+    let checked = 0;
+    for (const room of ROOMS) {
+        for (const hazard of room.hazards) {
+            if (!FOOD.includes(hazard.art)) continue;
+            const file = sizeOf(at(ART[hazard.art].src));
+            assert.equal(hazard.w / hazard.h, file.w / file.h,
+                `${room.name}의 ${hazard.art}: 상자는 ${hazard.w}×${hazard.h}인데 `
+                + `그림은 ${file.w}×${file.h}다 — 늘어나서 찌그러진다`);
+            checked++;
+        }
+    }
+    assert.equal(checked, FOOD.length, `음식 ${FOOD.length}가지를 다 보지 못했다 (${checked}개만 봤다)`);
+});
+
+test('편집기가 놓는 기본 크기도 그림 비율과 같다', () => {
+    // 끌어다 놓자마자 찌그러진 음식이 나오면 안 된다.
+    for (const name of FOOD) {
+        const spec = ART[name];
+        assert.ok(spec.w && spec.h, `${name}에 기본 크기가 없다`);
+        const file = sizeOf(at(spec.src));
+        assert.equal(spec.w / spec.h, file.w / file.h,
+            `${name}: 기본 크기 ${spec.w}×${spec.h}가 그림 ${file.w}×${file.h}와 안 맞는다`);
+    }
+});
+
+test('음식 미끼는 편의점에만 있다', async () => {
+    // 간식을 사러 온 사람이 간식에 혹해 붙잡힌다는 농담이 편의점에서만 선다.
+    const { ROOMS } = await import('../src/data/rooms.js');
+
+    for (const room of ROOMS) {
+        const foods = room.hazards.filter(h => FOOD.includes(h.art));
+        if (room.name === '편의점') assert.equal(foods.length, FOOD.length, '편의점에 음식이 덜 있다');
+        else assert.equal(foods.length, 0, `${room.name}에 음식 미끼가 있다`);
     }
 });
 

@@ -75,7 +75,7 @@ const PROP_ARTS = ['sofa', 'vending', 'plant', 'locker', 'shoes', 'car', 'trash'
 /// 함정으로 쓰는 그림.
 const HAZARD_ARTS = [
     'cart', 'gate', 'sensor', 'lamp', 'rail', 'wall', 'crack',
-    'tteokbokki', 'chicken', 'ramen',
+    'tteokbokki', 'chicken', 'ramen', 'icecream',
 ];
 
 /// 패널의 서랍. 배경·오프닝·걷기 같은 것은 놓을 수 있는 것이 아니라 뺀다.

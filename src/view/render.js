@@ -250,15 +250,29 @@ function drawHitboxes(ctx, state) {
     ctx.stroke();
 }
 
-/// revealed는 이 방에서 나를 이미 한 번 들키게 한 함정들의 번호다.
-/// 기억은 진행층이 든다 — 함정에 상태를 들리면 되감기도 건너뛰기도 안 되기 때문이다.
-export function drawRoom(ctx, room, state, images, showHitboxes, revealed = new Set(), playerFrame = null) {
+/// 방 한 장면을 그린다.
+///
+/// 넷째 인자부터는 <b>화면 사정</b>이라 이름을 달아 묶는다. 자리로 받으면
+/// drawRoom(ctx, room, state, images, true, set, null, false)처럼 되어
+/// 마지막 false가 무엇인지 부르는 쪽에서 알 수 없게 된다.
+///
+///   revealed     이 방에서 나를 이미 한 번 들키게 한 함정들의 번호.
+///                기억은 진행층이 든다 — 함정에 상태를 들리면 되감기가 안 된다
+///   playerFrame  지금 그릴 걷기 프레임. 없으면 서 있는 그림
+///   showPlayer   주인공을 그리는가. 방을 짤 때 <b>끄고 볼 수 있어야 한다</b> —
+///                주인공이 함정 위에 겹쳐 서 있으면 그 함정을 못 본다
+export function drawRoom(ctx, room, state, images, {
+    showHitboxes = false,
+    revealed = new Set(),
+    playerFrame = null,
+    showPlayer = true,
+} = {}) {
     drawFloor(ctx, room, images);
     drawProps(ctx, room, images);
     drawExit(ctx, room, images);
 
     state.shapes.forEach((shape, index) => drawHazard(ctx, shape, images, revealed.has(index)));
 
-    drawPlayer(ctx, state, images, playerFrame);
+    if (showPlayer) drawPlayer(ctx, state, images, playerFrame);
     if (showHitboxes) drawHitboxes(ctx, state);
 }

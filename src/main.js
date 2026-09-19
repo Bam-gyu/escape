@@ -62,6 +62,11 @@ const game = {
     editTime: 0,
     editPaused: false,
 
+    /// 주인공을 그리는가. 방을 짤 때만 끈다.
+    /// 주인공이 함정 위에 겹쳐 서 있으면 그 함정이 어떻게 생겼는지 볼 수가 없는데,
+    /// 커서를 따라다니는 게임이라 <b>손을 치울 수가 없다.</b>
+    showPlayer: true,
+
     /// 이 방에서 나를 이미 한 번 들키게 한 숨은 함정들의 번호.
     /// <b>기억은 여기가 든다.</b> 함정에 들리면 되감기도 건너뛰기도 안 되고,
     /// 다시 시작할 때 함정을 되돌리는 코드가 따로 필요해진다.
@@ -170,7 +175,12 @@ async function toggleAdmin() {
     game.admin = !game.admin;
     game.showHitboxes = game.admin;
 
-    if (!game.admin) { game.editor?.setOpen(false); return; }
+    if (!game.admin) {
+        // 꺼둔 채로 편집기를 닫으면 주인공 없는 게임이 된다. 반드시 되돌린다.
+        game.showPlayer = true;
+        game.editor?.setOpen(false);
+        return;
+    }
 
     // 타이틀이나 연출 중에 눌렀어도 곧장 방으로 들어간다.
     titleScreen.hidden = true;
@@ -420,7 +430,12 @@ function draw() {
 
     if (game.screen === 'ending') { drawEnding(); return; }
 
-    drawRoom(ctx, room(), game.last, images, game.showHitboxes, game.revealed, walkFrame());
+    drawRoom(ctx, room(), game.last, images, {
+        showHitboxes: game.showHitboxes,
+        revealed: game.revealed,
+        playerFrame: walkFrame(),
+        showPlayer: game.showPlayer,
+    });
     drawHud();
 
     if (game.showHitboxes) drawGrid();

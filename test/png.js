@@ -7,14 +7,22 @@
 import { readFileSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
 
+const SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
 /// png 덩이들을 차례로 훑는다. 크기(IHDR)와 그림 데이터(IDAT)만 쓴다.
+///
+/// 이상한 것을 만나면 <b>조용히 넘어가지 않고 터진다.</b> 검사에 쓰는 물건이라,
+/// 잘못 읽고도 그럴듯한 상자를 내놓으면 검사가 통과해 버린다. 그게 제일 나쁘다.
 function chunks(buffer) {
+    if (!buffer.subarray(0, 8).equals(SIGNATURE)) throw new Error('png가 아니다');
+
     const found = { idat: [] };
     let at = 8; // 파일 앞머리 8바이트를 건너뛴다
 
-    while (at < buffer.length) {
+    while (at + 8 <= buffer.length) {
         const length = buffer.readUInt32BE(at);
         const type = buffer.toString('ascii', at + 4, at + 8);
+        if (at + 12 + length > buffer.length) throw new Error(`${type} 덩이가 파일 밖으로 나간다`);
         const body = buffer.subarray(at + 8, at + 8 + length);
 
         if (type === 'IHDR') {
@@ -29,6 +37,9 @@ function chunks(buffer) {
 
         at += length + 12; // 길이 4 + 이름 4 + 몸통 + 검사합 4
     }
+
+    if (found.width === undefined) throw new Error('IHDR이 없다');
+    if (found.idat.length === 0) throw new Error('IDAT이 없다');
     return found;
 }
 
@@ -36,10 +47,20 @@ function chunks(buffer) {
 /// "윗줄과의 차이"를 읽게 되어 엉뚱한 곳이 투명해 보인다.
 function unfilter(raw, width, height, bytesPerPixel) {
     const stride = width * bytesPerPixel;
+
+    // 줄마다 필터 한 바이트가 앞에 붙는다. 길이가 안 맞으면 그 뒤는 전부
+    // 엉뚱한 자리를 읽게 되는데, 읽은 값이 0이 되어 "투명하다"로 보인다.
+    // 발이 떠 있어도 통과하는 검사가 되므로 여기서 끊는다.
+    const expected = height * (stride + 1);
+    if (raw.length !== expected) {
+        throw new Error(`푼 길이가 ${raw.length}인데 ${expected}이어야 한다`);
+    }
+
     const out = Buffer.alloc(stride * height);
 
     for (let y = 0; y < height; y++) {
         const filter = raw[y * (stride + 1)];
+        if (filter > 4) throw new Error(`${y}번째 줄의 필터 번호가 ${filter}다`);
         const line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
 
         for (let i = 0; i < stride; i++) {
@@ -71,6 +92,9 @@ function unfilter(raw, width, height, bytesPerPixel) {
 export function opaqueBox(path) {
     const png = chunks(readFileSync(path));
 
+    if (!(png.width > 0) || !(png.height > 0)) {
+        throw new Error(`${path}: 크기가 ${png.width}×${png.height}다`);
+    }
     if (png.colorType !== 6 || png.depth !== 8 || png.interlace !== 0) {
         throw new Error(`${path}: 8비트 RGBA(colorType 6, 비월주사 아님)로 내보내라 `
             + `— 지금은 depth ${png.depth}, colorType ${png.colorType}, interlace ${png.interlace}`);
