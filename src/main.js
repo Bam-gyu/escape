@@ -1,7 +1,7 @@
 import { ROOMS } from './data/rooms.js';
 import { stepRoom, ROOM_WIDTH, ROOM_HEIGHT } from './rules/room.js';
 import { loadArt, caughtArtFor, IDOL_WALK, WALK_FRAME_SECONDS } from './view/art.js';
-import { createAudio } from './view/audio.js';
+import { createAudio, musicFor } from './view/audio.js';
 import { drawRoom } from './view/render.js';
 import { COLOR } from './view/palette.js';
 
@@ -220,7 +220,14 @@ function showIntro() {
     introScreen.hidden = false;
 }
 
-document.getElementById('start').addEventListener('click', () => {
+const startButton = document.getElementById('start');
+
+// 버튼에 커서가 닿을 때. 누르기 전에 "눌리는 것"임을 소리가 먼저 알려준다.
+for (const button of [startButton, goButton]) {
+    button.addEventListener('mouseenter', () => audio.play('hover'));
+}
+
+startButton.addEventListener('click', () => {
     audio.play('click');
     titleScreen.hidden = true;
     game.screen = 'opening';
@@ -240,7 +247,6 @@ goButton.addEventListener('click', event => {
     game.pointer = pullToward(toGameCoords(event), ROOMS[startRoom].spawn, READY_RADIUS);
     introScreen.hidden = true;
     audio.play('click');
-    audio.startMusic();
     enterRoom(startRoom);
 });
 
@@ -481,6 +487,10 @@ function walkFrame() {
 }
 
 function frame(now) {
+    // 지금 화면에 맞는 곡. 이미 그게 돌고 있으면 아무 일도 안 한다.
+    // 화면을 바꾸는 자리마다 곡을 같이 갈면 언젠가 한 군데를 잊는다.
+    audio.playMusic(musicFor(game.screen));
+
     if (game.admin && !game.editPaused) {
         game.editTime += game.lastFrameAt ? (now - game.lastFrameAt) / 1000 : 0;
         game.editor?.tick();

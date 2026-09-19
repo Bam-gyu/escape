@@ -71,7 +71,7 @@
 - **엔딩** — 간식을 먹고 잠든 그림과 들킨 횟수
 - **방 편집기.** H를 누르면 오른쪽 서랍이 열린다. 그림을 끌어다 놓으면 함정이 되고,
   [저장]이 `src/data/rooms.js`를 다시 쓰고 검사까지 돌린다. **localhost에서만 열린다**
-- 검사 69개 통과 (`npm test`, 1초 안)
+- 검사 99개 통과 (`npm test`, 1초 안)
 
 ### 안 된 것 · 모르는 것
 
@@ -125,9 +125,9 @@ src/editor/    방 편집기. localhost에서 H를 누른 그 순간에만 불�
   panel.js       서랍과 입력칸
 tools/serve.js 파일을 내보내고 /api/rooms를 받는다. 127.0.0.1에만 연다
 src/main.js    화면 넘김, 들킨 횟수, 입력, 드러난 함정 기억
-test/          검사 69개
+test/          검사 99개
 art/           비어 있다. 여기에 png를 넣는다 → docs/art-guide.md
-audio/         Re에서 가져온 mp3 5개
+audio/         배경음 2 + 효과음 5
 ```
 
 ### 설계의 핵심 셋
@@ -182,13 +182,26 @@ audio/         Re에서 가져온 mp3 5개
 
 ## 8. 소리 바꾸기
 
-`audio/`의 파일을 갈아끼운다. 지금 것은 Re의 `Assets/Sound/`에서 가져왔다.
+`audio/`의 파일을 갈아끼운다. 이름은 `src/view/audio.js`에 있는 것과 맞아야 한다.
 
 ```
-click.mp3  버튼        death.mp3  들킬 때     clear.mp3  구역을 지났을 때
-win.mp3    편의점 도착  bgm.mp3    배경음
+title-bgm.mp3    타이틀·연출·엔딩 — 게임 밖
+stage-bgm.mp3    방에 들어간 뒤 — 게임 안
+title-select.mp3 버튼에 커서가 닿을 때
+click.mp3        버튼을 누를 때
+death.mp3        들킬 때
+clear.mp3        구역을 지났을 때
+win.mp3          편의점 도착
 ```
 
+**파일 이름은 소문자로 둔다.** macOS는 대소문자를 안 가리지만 올리는 서버는
+가린다 — `Click.mp3`로 두면 내 컴퓨터에서만 나고 배포하면 조용해진다. 검사가 본다.
+
+**브라우저는 사람이 한 번 건드리기 전까지 소리를 막는다.** 그래서 처음 열었을 때
+타이틀 음악이 조용히 실패한다. `audio.js`가 첫 손길(`pointerdown`·`keydown`)에
+한 번 더 걸어본다. 이걸 지우면 타이틀 음악이 안 나오는 채로 남는다.
+
+`death`·`clear`·`win`은 Re의 `Assets/Sound/`에서 가져온 것이 그대로 있다.
 Re에는 SFX 26개, BGM 12개가 더 있다. 전부 mp3라 변환 없이 바로 쓴다.
 
 ## 9. 걸리기 쉬운 것

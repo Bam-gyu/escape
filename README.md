@@ -45,7 +45,7 @@ Host·Origin·Content-Type을 봐서 **자기가 연 화면에서 온 요청만*
 npm test
 ```
 
-규칙이 화면을 모르는 순수 함수라 브라우저 없이 다 검사된다. 69개, 1초 안에 끝난다.
+규칙이 화면을 모르는 순수 함수라 브라우저 없이 다 검사된다. 99개, 1초 안에 끝난다.
 
 ## 방 추가하기
 
@@ -110,12 +110,22 @@ npm test
 
 ## 소리 바꾸기
 
-`audio/` 폴더의 파일을 갈아끼운다. 지금 들어 있는 것은 Re 프로젝트에서 가져왔다.
+`audio/` 폴더의 파일을 갈아끼운다. 이름은 `src/view/audio.js`에 있는 것과 맞아야 한다.
 
 ```
-click.mp3  버튼          death.mp3  들킬 때
-clear.mp3  구역을 지났을 때  win.mp3  편의점 도착   bgm.mp3  배경음
+title-bgm.mp3    타이틀·연출·엔딩 — 게임 밖
+stage-bgm.mp3    방에 들어간 뒤 — 게임 안
+title-select.mp3 버튼에 커서가 닿을 때
+click.mp3        버튼을 누를 때
+death.mp3        들킬 때
+clear.mp3        구역을 지났을 때
+win.mp3          편의점 도착
 ```
+
+**이름은 소문자로 둔다.** macOS는 대소문자를 안 가리지만 올리는 서버는 가린다 —
+`Click.mp3`로 두면 내 컴퓨터에서만 나고 배포하면 조용해진다. 검사가 본다.
+
+어느 화면에서 어느 곡이 도는지는 `audio.js`의 `musicFor` 한 곳에서 정한다.
 
 ## 어디에 무엇이 있나
 
@@ -127,6 +137,6 @@ src/rules/     규칙. 화면도 시간도 모른다. 여기만 검사하면 게
 src/data/rooms.js   방 목록. 방을 늘리는 곳
 src/view/      그리기와 소리. 규칙을 안 바꾸고 보여주기만 한다
 src/main.js    화면 넘김과 진행
-test/          검사 42개
+test/          검사 99개
 docs/          PRD.md(인계 문서), art-guide.md(그림 준비법)
 ```
