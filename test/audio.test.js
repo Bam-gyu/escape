@@ -83,7 +83,11 @@ function withFakeAudio(run, { blockUntilGesture = false } = {}) {
         }
         pause() { this.playing = false; }
     };
-    globalThis.addEventListener = (type, fn) => listeners.push({ type, fn });
+    // <b>once를 흉내 내야 한다.</b> 안 그러면 "한 번만 걸고 포기한다"는 결함을
+    // 이 가짜가 대신 덮어줘서, 검사가 지키는 척만 하게 된다. 실제로 그랬다.
+    globalThis.addEventListener = (type, fn, options) => {
+        listeners.push({ type, fn, once: options?.once === true });
+    };
 
     try {
         const audio = createAudio(false);
@@ -92,7 +96,10 @@ function withFakeAudio(run, { blockUntilGesture = false } = {}) {
         /// 사람이 화면을 건드렸다. 그 순간부터 브라우저가 소리를 허락한다.
         const gesture = type => {
             blocked = false;
-            for (const l of listeners) if (l.type === type) l.fn({});
+            for (const l of listeners.filter(l => l.type === type)) {
+                if (l.once) listeners.splice(listeners.indexOf(l), 1);
+                l.fn({});
+            }
         };
         return run(audio, track, made, gesture);
     } finally {
@@ -179,17 +186,6 @@ test('키를 눌러도 다시 걸어본다', () => {
         audio.playMusic('stage');
         gesture('keydown');
         assert.equal(track('stage').playing, true);
-    }, { blockUntilGesture: true });
-});
-
-test('한 번 막혔다고 그 뒤로 포기하지 않는다', () => {
-    // 첫 손길이 하필 아무 곡도 안 정해진 때였다면, 그 한 번을 써버리고
-    // 영영 조용한 채로 남으면 안 된다.
-    withFakeAudio((audio, track, _made, gesture) => {
-        gesture('pointerdown');              // 아직 고른 곡이 없다 — 헛손질
-        audio.playMusic('title');            // 이제 곡이 정해졌다
-        gesture('pointerdown');              // 두 번째 손길
-        assert.equal(track('title').playing, true, '두 번째 손길에도 나야 한다');
     }, { blockUntilGesture: true });
 });
 

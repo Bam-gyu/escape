@@ -57,18 +57,32 @@ export function createAudio(muted) {
     let silent = muted;
     let current = null;
 
+    // 한 번만 말한다. 막힌 채로 프레임마다 떠들면 콘솔이 못 쓰게 된다.
+    let toldBlocked = false;
+
     function start() {
         if (silent || !current) return;
-        tracks[current].play().catch(() => { });
+
+        tracks[current].play().then(() => { toldBlocked = false; }).catch(error => {
+            // <b>조용히 실패하면 고장인지 정책인지 알 수가 없다.</b>
+            // 브라우저가 막은 것인지, 파일이 없는 것인지를 여기서 갈라 말해준다.
+            if (toldBlocked) return;
+            toldBlocked = true;
+
+            const blocked = error?.name === 'NotAllowedError';
+            console.warn(blocked
+                ? `[소리] 브라우저가 막았다. 화면을 한 번 누르면 ${MUSIC[current]}가 난다.`
+                : `[소리] ${MUSIC[current]}를 못 틀었다 — ${error?.name ?? error}`);
+        });
     }
 
     // 브라우저는 <b>사람이 한 번 건드리기 전까지 소리를 막는다.</b>
     // 그래서 처음 열었을 때 배경음이 조용히 실패한다. play()가 아무 말 없이
     // 거절되므로 막혔는지 알 길이 없다.
     //
-    // <b>손길이 있을 때마다 다시 건다.</b> 한 번만(once) 걸면 그 한 번이
-    // 하필 막히는 순간이었을 때 — 배경 탭이라 아직 그릴 곡이 안 정해졌다든지 —
-    // 영영 조용한 채로 남는다. 이미 나고 있으면 다시 불러도 아무 일도 안 일어난다.
+    // 손길이 있을 때마다 다시 건다. 한 번만(once) 걸어도 대개는 되는데,
+    // 그 한 번이 아직 그릴 곡이 안 정해진 때였다면 헛되이 소모된다.
+    // 이미 나고 있으면 다시 불러도 아무 일도 안 일어나므로 매번 거는 편이 싸다.
     addEventListener('pointerdown', () => start());
     addEventListener('keydown', () => start());
 
