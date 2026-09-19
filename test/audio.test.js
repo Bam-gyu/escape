@@ -62,25 +62,39 @@ test('게임 밖에서는 타이틀곡, 방 안에서는 스테이지곡이다',
 
 /// 브라우저 없이 createAudio를 돌리려고 Audio와 리스너를 흉내 낸다.
 /// 어떤 곡이 언제 났는지 세는 것이 전부다.
-function withFakeAudio(run) {
+function withFakeAudio(run, { blockUntilGesture = false } = {}) {
     const made = [];
+    const listeners = [];
     const savedAudio = globalThis.Audio;
     const savedAdd = globalThis.addEventListener;
+
+    // 브라우저가 막고 있는 동안은 play()가 거절된다. 진짜와 같게 흉내 낸다.
+    let blocked = blockUntilGesture;
 
     globalThis.Audio = class {
         constructor(src) {
             this.src = src; this.playing = false; this.currentTime = 0; this.starts = 0;
             made.push(this);
         }
-        play() { this.playing = true; this.starts++; return Promise.resolve(); }
+        play() {
+            if (blocked) return Promise.reject(new Error('NotAllowedError'));
+            this.playing = true; this.starts++;
+            return Promise.resolve();
+        }
         pause() { this.playing = false; }
     };
-    globalThis.addEventListener = () => { };
+    globalThis.addEventListener = (type, fn) => listeners.push({ type, fn });
 
     try {
         const audio = createAudio(false);
         const track = name => made.find(a => a.src === MUSIC[name]);
-        return run(audio, track, made);
+
+        /// 사람이 화면을 건드렸다. 그 순간부터 브라우저가 소리를 허락한다.
+        const gesture = type => {
+            blocked = false;
+            for (const l of listeners) if (l.type === type) l.fn({});
+        };
+        return run(audio, track, made, gesture);
     } finally {
         globalThis.Audio = savedAudio;
         globalThis.addEventListener = savedAdd;
@@ -143,4 +157,47 @@ test('음소거 중에는 효과음도 안 난다', () => {
         audio.play('click');
         assert.equal(made.find(a => a.src === SOUNDS.click).starts, 0);
     });
+});
+
+
+// ── 브라우저가 막았을 때 ──────────────────────────────────────
+// 처음 열면 브라우저가 소리를 막는다. play()가 조용히 거절되므로
+// 막힌 줄도 모르고 지나간다. 사람이 건드릴 때 다시 걸어야 한다.
+
+test('막혔다가 사람이 누르면 그때 배경음이 난다', () => {
+    withFakeAudio((audio, track, _made, gesture) => {
+        audio.playMusic('title');
+        assert.equal(track('title').playing, false, '아직은 막혀 있어야 한다');
+
+        gesture('pointerdown');
+        assert.equal(track('title').playing, true, '누른 뒤에는 나야 한다');
+    }, { blockUntilGesture: true });
+});
+
+test('키를 눌러도 다시 걸어본다', () => {
+    withFakeAudio((audio, track, _made, gesture) => {
+        audio.playMusic('stage');
+        gesture('keydown');
+        assert.equal(track('stage').playing, true);
+    }, { blockUntilGesture: true });
+});
+
+test('한 번 막혔다고 그 뒤로 포기하지 않는다', () => {
+    // 첫 손길이 하필 아무 곡도 안 정해진 때였다면, 그 한 번을 써버리고
+    // 영영 조용한 채로 남으면 안 된다.
+    withFakeAudio((audio, track, _made, gesture) => {
+        gesture('pointerdown');              // 아직 고른 곡이 없다 — 헛손질
+        audio.playMusic('title');            // 이제 곡이 정해졌다
+        gesture('pointerdown');              // 두 번째 손길
+        assert.equal(track('title').playing, true, '두 번째 손길에도 나야 한다');
+    }, { blockUntilGesture: true });
+});
+
+test('음소거 중에는 사람이 눌러도 안 난다', () => {
+    withFakeAudio((audio, track, _made, gesture) => {
+        audio.setMuted(true);
+        audio.playMusic('title');
+        gesture('pointerdown');
+        assert.equal(track('title').playing, false);
+    }, { blockUntilGesture: true });
 });

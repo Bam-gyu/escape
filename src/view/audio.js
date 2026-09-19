@@ -63,12 +63,14 @@ export function createAudio(muted) {
     }
 
     // 브라우저는 <b>사람이 한 번 건드리기 전까지 소리를 막는다.</b>
-    // 그래서 처음 열었을 때 타이틀 음악이 조용히 실패한다. 막힌 것을 알 길이
-    // 없으므로(play()가 조용히 거절된다) 첫 손길에 한 번 더 걸어본다.
-    // 이미 나고 있으면 play()를 다시 불러도 아무 일도 안 일어난다.
-    const unlock = () => start();
-    addEventListener('pointerdown', unlock, { once: true });
-    addEventListener('keydown', unlock, { once: true });
+    // 그래서 처음 열었을 때 배경음이 조용히 실패한다. play()가 아무 말 없이
+    // 거절되므로 막혔는지 알 길이 없다.
+    //
+    // <b>손길이 있을 때마다 다시 건다.</b> 한 번만(once) 걸면 그 한 번이
+    // 하필 막히는 순간이었을 때 — 배경 탭이라 아직 그릴 곡이 안 정해졌다든지 —
+    // 영영 조용한 채로 남는다. 이미 나고 있으면 다시 불러도 아무 일도 안 일어난다.
+    addEventListener('pointerdown', () => start());
+    addEventListener('keydown', () => start());
 
     return {
         get muted() { return silent; },
