@@ -124,3 +124,61 @@ test('방이 쓰는 그림은 모두 art.js에 있다', async () => {
         }
     }
 });
+
+// ── 들킴 화면 ─────────────────────────────────────────────────
+
+test('감시병에 들키면 감시 그림, 함정에 걸리면 함정 그림이다', async () => {
+    const { caughtArtFor } = await import('../src/view/art.js');
+
+    assert.equal(caughtArtFor({ kind: 'cone', art: 'watch1' }), 'caughtWatch');
+    assert.equal(caughtArtFor({ kind: 'rect', art: 'tteokbokki' }), 'caughtTrap');
+    assert.equal(caughtArtFor({ kind: 'rect', art: 'icecream' }), 'caughtTrap');
+    assert.equal(caughtArtFor({ kind: 'mover', art: 'cart' }), 'caughtTrap');
+    assert.equal(caughtArtFor({ kind: 'blink', art: 'sensor' }), 'caughtTrap');
+    assert.equal(caughtArtFor({ kind: 'spinner', art: 'gate' }), 'caughtTrap');
+    assert.equal(caughtArtFor({ kind: 'rect', hidden: true }), 'caughtTrap');
+});
+
+test('무엇에 들켰는지 모르면 글자만 나온다', async () => {
+    const { caughtArtFor } = await import('../src/view/art.js');
+    assert.equal(caughtArtFor(null), null);
+    assert.equal(caughtArtFor(undefined), null);
+
+    // 모르는 종류를 아는 척하면 안 된다. 새 함정을 만들고 여기를 안 고쳤을 때
+    // 엉뚱한 그림이 나오느니 예전 글자 화면으로 돌아가는 편이 낫다.
+    assert.equal(caughtArtFor({}), null);
+    assert.equal(caughtArtFor({ kind: 'bomb' }), null);
+    assert.equal(caughtArtFor({ art: 'icecream' }), null);
+});
+
+test('함정 종류가 하나도 빠지지 않았다', async () => {
+    // hazards.js가 아는 종류와 들킴 그림이 아는 종류가 같아야 한다.
+    // 어긋나면 그 함정에 죽었을 때만 글자 화면이 나온다.
+    const { caughtArtFor } = await import('../src/view/art.js');
+    const { KINDS } = await import('../src/editor/defaults.js');
+
+    for (const kind of Object.keys(KINDS)) {
+        assert.ok(caughtArtFor({ kind }), `${kind}에 들킴 그림이 없다`);
+    }
+});
+
+test('방에 놓인 모든 함정이 들킴 그림을 갖는다', async () => {
+    // 그림 없이 지나가는 함정이 있으면 그 방에서만 글자 화면이 나와서,
+    // 고장인지 일부러 그런 것인지 알 수가 없다.
+    const { caughtArtFor } = await import('../src/view/art.js');
+    const { ROOMS } = await import('../src/data/rooms.js');
+
+    for (const room of ROOMS) {
+        for (const hazard of room.hazards) {
+            const name = caughtArtFor(hazard);
+            assert.ok(name && ART[name], `${room.name}의 ${hazard.kind}에 들킴 그림이 없다`);
+        }
+    }
+});
+
+test('들킴 그림 두 장이 다 있고 화면 크기다', () => {
+    for (const name of ['caughtTrap', 'caughtWatch', 'endNap', 'openLightOn', 'openLightOff']) {
+        const { w, h } = sizeOf(at(ART[name].src));
+        assert.deepEqual([w, h], [960, 720], `${name}이 960×720이 아니다`);
+    }
+});

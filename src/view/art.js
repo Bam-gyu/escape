@@ -61,6 +61,10 @@ export const ART = {
     // 엔딩 — 간식을 먹고 잠들었다
     endNap: { src: 'art/end-nap.png' },
 
+    // 들켰을 때 — 960×720 한 장씩. 무엇에 들켰느냐로 갈린다
+    caughtTrap: { src: 'art/caught-trap.png' },
+    caughtWatch: { src: 'art/caught-watch.png' },
+
     // 방 배경 — 960×720 한 장. 방 데이터의 background에 이름을 적는다
     bgRoom: { src: 'art/bg-room.png' },
     bgLiving: { src: 'art/bg-living.png' },
@@ -94,6 +98,28 @@ export const ART_LABEL = {
     sofa: '소파', vending: '자판기', plant: '화분', locker: '사물함',
     shoes: '신발', car: '차', trash: '쓰레기통', sign: '간판',
 };
+
+/// 음식 미끼. 새 함정 종류가 아니라 그림만 다른 `rect`다.
+export const FOOD_BAITS = ['tteokbokki', 'chicken', 'ramen', 'icecream'];
+
+/// 무엇에 들켰는지에 따라 다른 들킴 그림을 고른다.
+///
+/// <b>감시병이냐 함정이냐</b> 둘로만 가른다. 시야(`cone`)를 든 것은 사람이고,
+/// 그 밖은 전부 장치다. 들킨 이유가 그림으로 한 번 더 말해지면
+/// "왜 죽었는지"가 글자만 볼 때보다 빨리 온다.
+///
+/// 갈래를 더 두고 싶으면 여기만 고치면 된다 — 그리는 쪽은 이름만 받는다.
+/// 모르는 것에 들켰으면 null이고, 그때는 예전처럼 글자만 나온다.
+export function caughtArtFor(hazard) {
+    if (hazard?.kind === 'cone') return 'caughtWatch';
+    if (TRAP_KINDS.includes(hazard?.kind)) return 'caughtTrap';
+    return null;
+}
+
+/// 사람이 아닌 것들. 여기 없는 종류는 <b>아는 척하지 않고</b> 글자 화면으로 돌아간다.
+/// 새 함정을 만들면 여기에도 한 줄 더한다 — 안 그러면 그 함정에만 글자가 나와서
+/// 고장인지 일부러 그런 것인지 알 수가 없다. 검사가 그걸 잡는다.
+const TRAP_KINDS = ['rect', 'blink', 'mover', 'spinner'];
 
 /// 걷기 한 바퀴. <b>움직일 때만 돌린다</b> — 멈췄는데 발을 구르면
 /// 제자리걸음처럼 보이고, 커서를 따라가는 게임에서 그건 거짓말이다.

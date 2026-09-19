@@ -1,6 +1,6 @@
 import { ROOMS } from './data/rooms.js';
 import { stepRoom, ROOM_WIDTH, ROOM_HEIGHT } from './rules/room.js';
-import { loadArt, IDOL_WALK, WALK_FRAME_SECONDS } from './view/art.js';
+import { loadArt, caughtArtFor, IDOL_WALK, WALK_FRAME_SECONDS } from './view/art.js';
 import { createAudio } from './view/audio.js';
 import { drawRoom } from './view/render.js';
 import { COLOR } from './view/palette.js';
@@ -372,14 +372,28 @@ function drawVeil(alpha) {
     ctx.fillRect(0, 0, ROOM_WIDTH, ROOM_HEIGHT);
 }
 
+/// 들킴 화면. 무엇에 들켰느냐에 따라 그림이 다르다.
+///
+/// 글자는 그림이 있든 없든 <b>같은 자리에 같은 말이 나온다.</b> 그림은 뒤에
+/// 깔리는 것이고, 무엇을 말해주는지는 안 바뀐다 — 그림이 아직 없던 때와
+/// 같은 화면을 읽을 수 있어야 한다.
 function drawDead() {
-    drawVeil(0.72);
+    const killer = room().hazards[game.last?.killedBy ?? -1];
+    const image = images[caughtArtFor(killer)];
+
+    if (image) {
+        ctx.drawImage(image, 0, 0, ROOM_WIDTH, ROOM_HEIGHT);
+        // 그림 위에서도 글자가 읽혀야 한다. 다만 0.72로 덮으면 그림이 안 보인다.
+        drawVeil(0.42);
+    } else {
+        drawVeil(0.72);
+    }
+
     label('들켰다', ROOM_WIDTH / 2, 320, 110, 'center');
     label(`${game.deaths}번째`, ROOM_WIDTH / 2, 390, 44, 'center', '#9fb0c8');
 
     // 방금 당한 것이 안 보이는 함정이었으면 그렇다고 말해준다.
     // 말해주지 않으면 화면에 갑자기 생긴 붉은 자국이 무엇인지 알 수 없다.
-    const killer = room().hazards[game.last?.killedBy ?? -1];
     if (killer?.hidden) {
         label('안 보이는 것이 있었다', ROOM_WIDTH / 2, 442, 38, 'center', '#ff9ec4');
     }
