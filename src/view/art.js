@@ -24,10 +24,14 @@ export const ART = {
     // 나오면 "또 저 사람"이 되어 방이 다 같아 보인다.
     //
     // 파일이 없으면 색 도형으로 나온다. 넷이 서로 다른 색이라 그 상태로도 구별된다.
-    watch1: { src: 'art/watch-1.png', w: 48, h: 68, anchor: 'feet' },
-    watch2: { src: 'art/watch-2.png', w: 48, h: 68, anchor: 'feet' },
-    watch3: { src: 'art/watch-3.png', w: 48, h: 68, anchor: 'feet' },
-    watch4: { src: 'art/watch-4.png', w: 48, h: 68, anchor: 'feet' },
+    //
+    // 36×68인 것은 원본이 72×136이기 때문이다. 딱 절반이다.
+    // <b>그림 비율을 지켜야 한다</b> — 상자에 맞춰 늘이는 방식이라 48을 주면
+    // 33%만큼 옆으로 퍼진 사람이 나온다. 작게 나오는 그림이라 티가 안 나서 더 나쁘다.
+    watch1: { src: 'art/watch-1.png', w: 36, h: 68, anchor: 'feet' },
+    watch2: { src: 'art/watch-2.png', w: 36, h: 68, anchor: 'feet' },
+    watch3: { src: 'art/watch-3.png', w: 36, h: 68, anchor: 'feet' },
+    watch4: { src: 'art/watch-4.png', w: 36, h: 68, anchor: 'feet' },
 
     // 함정
     wall: { src: 'art/wall.png', tile: 'xy', tileWidth: 120, tileHeight: 120 },
