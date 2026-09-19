@@ -3,7 +3,7 @@
 // 여기 적힌 숫자는 "끌어다 놓았을 때 일단 이 정도"라는 뜻일 뿐이다.
 // 게임은 이 파일을 안 본다 — 놓고 나서 고친 숫자만 rooms.js로 간다.
 
-import { ART } from '../view/art.js';
+import { ART, WATCHERS } from '../view/art.js';
 
 /// 종류마다 쓰는 값과 그 뜻. 패널의 입력칸이 이 목록에서 나온다.
 /// 새 함정을 만들면 여기에 한 줄 더하면 편집기가 그걸 다룰 줄 알게 된다.
@@ -59,23 +59,31 @@ export const FIELD_HELP = {
 /// 경비를 놓으면 시야가, 차단바를 놓으면 도는 막대가 나와야 한다.
 /// 놓자마자 "그럴듯한 것"이 되어 있어야 편집기가 쓸모 있다. 놓고 나서 바꿔도 된다.
 const BY_ART = {
-    guard: 'cone', manager: 'cone',
     cart: 'mover',
     gate: 'spinner',
     sensor: 'blink', lamp: 'blink',
 };
+
+// 감시하는 사람은 전부 시야가 된다. 한 줄씩 적지 않는 것은 사람이 늘어날 때
+// art.js와 여기 두 군데를 고치게 되고, 한 군데를 잊으면 사람을 놓았는데
+// 시야가 아니라 벽이 나오기 때문이다.
+for (const name of WATCHERS) BY_ART[name] = 'cone';
 
 /// 판정이 없는 장식. 게임은 이 목록을 아예 안 본다.
 const PROP_ARTS = ['sofa', 'vending', 'plant', 'locker', 'shoes', 'car', 'trash', 'sign'];
 
 /// 함정으로 쓰는 그림.
 const HAZARD_ARTS = [
-    'guard', 'manager', 'cart', 'gate', 'sensor', 'lamp', 'rail', 'wall', 'crack',
+    'cart', 'gate', 'sensor', 'lamp', 'rail', 'wall', 'crack',
     'tteokbokki', 'chicken', 'ramen',
 ];
 
 /// 패널의 서랍. 배경·오프닝·걷기 같은 것은 놓을 수 있는 것이 아니라 뺀다.
+///
+/// <b>감시하는 사람을 맨 위 서랍에 따로 둔다.</b> 방을 짤 때 제일 먼저 놓는 것이
+/// 사람이고, 함정 열댓 개에 섞여 있으면 매번 찾아야 한다.
 export const DRAWERS = [
+    { title: '감시하는 사람 — 놓으면 시야가 된다', arts: [...WATCHERS] },
     { title: '함정', arts: HAZARD_ARTS },
     { title: '소품 — 판정 없음', arts: PROP_ARTS },
 ];

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { pickAt, itemOf, moveBy, removeFrom, outlineOf } from '../src/editor/pick.js';
 import { makeItem, changeKind, isProp, centerOf, KINDS } from '../src/editor/defaults.js';
+import { WATCHERS, ART, ART_LABEL } from '../src/view/art.js';
 
 const room = () => ({
     name: '검사용',
@@ -77,8 +78,8 @@ test('가운데를 기준으로 삼는 것은 동그란 테두리가 나온다',
     assert.equal(outlineOf(room(), { what: 'hazard', index: 0 }).round, false);
 });
 
-test('경비를 놓으면 시야가, 차단바를 놓으면 도는 막대가 된다', () => {
-    assert.equal(makeItem('guard', 400, 300).kind, 'cone');
+test('감시자를 놓으면 시야가, 차단바를 놓으면 도는 막대가 된다', () => {
+    assert.equal(makeItem('watch1', 400, 300).kind, 'cone');
     assert.equal(makeItem('gate', 400, 300).kind, 'spinner');
     assert.equal(makeItem('cart', 400, 300).kind, 'mover');
     assert.equal(makeItem('sensor', 400, 300).kind, 'blink');
@@ -87,7 +88,7 @@ test('경비를 놓으면 시야가, 차단바를 놓으면 도는 막대가 된
 
 test('사람과 축은 누른 자리가 곧 기준점이다', () => {
     // cone과 spinner의 x·y는 가운데다. 다른 것처럼 왼쪽 위로 밀면 딴 데 놓인다.
-    assert.deepEqual([makeItem('guard', 400, 300).x, makeItem('guard', 400, 300).y], [400, 300]);
+    assert.deepEqual([makeItem('watch1', 400, 300).x, makeItem('watch1', 400, 300).y], [400, 300]);
     assert.deepEqual([makeItem('gate', 400, 300).x, makeItem('gate', 400, 300).y], [400, 300]);
 });
 
@@ -98,7 +99,7 @@ test('상자짜리는 누른 자리가 가운데에 오게 놓인다', () => {
 });
 
 test('놓자마자 그 종류에 필요한 값이 다 있다', () => {
-    for (const art of ['guard', 'gate', 'cart', 'sensor', 'crack']) {
+    for (const art of ['watch1', 'gate', 'cart', 'sensor', 'crack']) {
         const item = makeItem(art, 400, 300);
         for (const field of KINDS[item.kind].fields) {
             assert.equal(typeof item[field], 'number', `${art}의 ${field}가 없다`);
@@ -126,7 +127,7 @@ test('안 보이는 표시는 종류를 바꿔도 남는다', () => {
 
 test('소품과 함정을 가른다', () => {
     assert.equal(isProp('sofa'), true);
-    assert.equal(isProp('guard'), false);
+    assert.equal(isProp('watch1'), false);
     assert.equal(makeItem('sofa', 400, 300).kind, undefined);
     assert.equal(makeItem('sofa', 400, 300).name, 'sofa');
 });
@@ -183,7 +184,7 @@ test('종류를 바꿔도 화면에서 보이는 가운데가 그대로다', () 
     assert.deepEqual(centerOf(changeKind(box, 'cone')), { x: 400, y: 300 });
     assert.deepEqual(centerOf(changeKind(box, 'spinner')), { x: 400, y: 300 });
 
-    const cone = makeItem('guard', 400, 300);
+    const cone = makeItem('watch1', 400, 300);
     assert.deepEqual(centerOf(changeKind(cone, 'rect')), { x: 400, y: 300 });
     assert.deepEqual(centerOf(changeKind(cone, 'mover')), { x: 400, y: 300 });
 });
@@ -194,4 +195,53 @@ test('종류를 오가며 바꿔도 자리가 흘러가지 않는다', () => {
         item = changeKind(item, kind);
     }
     assert.deepEqual(centerOf(item), { x: 400, y: 300 });
+});
+
+
+// ── 감시하는 사람 ─────────────────────────────────────────────
+// 넷을 두는 것은 방마다 다른 얼굴이 나오게 하려는 것이다.
+// 하나라도 빠지면 그 사람을 놓았을 때 시야가 아니라 벽이 나온다.
+
+test('감시자는 모두 놓으면 시야가 된다', () => {
+    for (const name of WATCHERS) {
+        assert.equal(makeItem(name, 400, 300).kind, 'cone', `${name}이 시야가 아니다`);
+    }
+});
+
+test('감시자는 모두 그림 목록과 이름을 갖고 있다', () => {
+    for (const name of WATCHERS) {
+        assert.ok(ART[name], `${name}이 art.js에 없다`);
+        assert.equal(ART[name].anchor, 'feet', `${name}의 기준점이 발밑이 아니다`);
+        assert.ok(ART_LABEL[name], `${name}의 한글 이름이 없다`);
+    }
+});
+
+test('감시자는 편집기 서랍에 다 들어 있다', async () => {
+    const { DRAWERS } = await import('../src/editor/defaults.js');
+    const inDrawers = DRAWERS.flatMap(d => d.arts);
+    for (const name of WATCHERS) {
+        assert.ok(inDrawers.includes(name), `${name}이 서랍에 없다 — 끌어다 놓을 수가 없다`);
+    }
+});
+
+test('감시자는 그림이 없어도 서로 다른 색으로 나온다', async () => {
+    const { COLOR } = await import('../src/view/palette.js');
+    const bodies = WATCHERS.map(name => COLOR[name]);
+    for (const name of WATCHERS) {
+        assert.ok(COLOR[name], `${name}의 색이 없다`);
+        assert.ok(COLOR[`${name}Cap`], `${name}의 모자 색이 없다`);
+    }
+    assert.equal(new Set(bodies).size, WATCHERS.length, '두 감시자가 같은 색이다');
+});
+
+test('방이 쓰는 사람은 모두 그릴 줄 아는 사람이다', async () => {
+    // 없는 이름을 적어두면 화면에 엉뚱한 사람이 서 있게 된다. 조용해서 더 나쁘다.
+    const { ROOMS } = await import('../src/data/rooms.js');
+    for (const room of ROOMS) {
+        for (const hazard of room.hazards) {
+            if (hazard.kind !== 'cone') continue;
+            assert.ok(WATCHERS.includes(hazard.art),
+                `${room.name}의 시야가 모르는 사람(${hazard.art})을 쓴다`);
+        }
+    }
 });

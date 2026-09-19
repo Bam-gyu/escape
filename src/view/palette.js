@@ -13,10 +13,13 @@ export const COLOR = {
     gate: '#e8b23a',
     cone: 'rgba(255, 96, 84, 0.34)',
     coneEdge: 'rgba(255, 96, 84, 0.72)',
-    guard: '#2a3250',
-    guardCap: '#8d97b5',
-    manager: '#3a2f4a',
-    managerCap: '#c98fd6',
+    // 감시하는 사람 넷. 그림이 없을 때 쓰는 색이다.
+    // <b>넷이 서로 달라야 한다</b> — 같은 색이면 그림이 들어오기 전까지
+    // 어느 방에 누가 서 있는지 구별이 안 된다.
+    watch1: '#2a3250', watch1Cap: '#8d97b5',
+    watch2: '#3a2f4a', watch2Cap: '#c98fd6',
+    watch3: '#25403c', watch3Cap: '#7fd6c0',
+    watch4: '#43321f', watch4Cap: '#e0b072',
     idol: '#ff9ec4',
     idolHead: '#ffe9d6',
     exit: '#63e0a0',

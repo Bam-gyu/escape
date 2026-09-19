@@ -19,8 +19,15 @@ export const ART = {
     idolWalk2: { src: 'art/idol-walk/idol-walk-02.png', w: 44, h: 62, anchor: 'feet' },
     idolWalk3: { src: 'art/idol-walk/idol-walk-03.png', w: 44, h: 62, anchor: 'feet' },
     idolWalk4: { src: 'art/idol-walk/idol-walk-04.png', w: 44, h: 62, anchor: 'feet' },
-    manager: { src: 'art/manager.png', w: 48, h: 68, anchor: 'feet' },
-    guard: { src: 'art/guard.png', w: 48, h: 68, anchor: 'feet' },
+    // 감시하는 사람 넷. <b>시야(cone)를 달고 다니는 것이 이들이다.</b>
+    // 넷인 것은 방마다 다른 얼굴이 나오게 하려는 것이다 — 여섯 방에서 같은 사람만
+    // 나오면 "또 저 사람"이 되어 방이 다 같아 보인다.
+    //
+    // 파일이 없으면 색 도형으로 나온다. 넷이 서로 다른 색이라 그 상태로도 구별된다.
+    watch1: { src: 'art/watch-1.png', w: 48, h: 68, anchor: 'feet' },
+    watch2: { src: 'art/watch-2.png', w: 48, h: 68, anchor: 'feet' },
+    watch3: { src: 'art/watch-3.png', w: 48, h: 68, anchor: 'feet' },
+    watch4: { src: 'art/watch-4.png', w: 48, h: 68, anchor: 'feet' },
 
     // 함정
     wall: { src: 'art/wall.png', tile: 'xy', tileWidth: 120, tileHeight: 120 },
@@ -62,6 +69,21 @@ export const ART = {
     car: { src: 'art/car.png' },
     trash: { src: 'art/trash.png' },
     sign: { src: 'art/sign.png' },
+};
+
+/// 시야를 들 수 있는 사람들. <b>`cone`이 그릴 줄 아는 것이 이 목록이다.</b>
+/// 여기 없는 이름을 방 데이터에 적으면 첫 사람으로 대신 그린다.
+export const WATCHERS = ['watch1', 'watch2', 'watch3', 'watch4'];
+
+/// 화면에 보여줄 이름. 편집기의 서랍에 이걸로 적힌다 —
+/// `watch2`보다 `감시2`가 무엇인지 바로 안다.
+export const ART_LABEL = {
+    watch1: '감시1', watch2: '감시2', watch3: '감시3', watch4: '감시4',
+    cart: '카트', gate: '차단바', sensor: '센서', lamp: '복도등',
+    rail: '난간', wall: '벽', crack: '갈라진 곳',
+    tteokbokki: '떡볶이', chicken: '치킨', ramen: '라면',
+    sofa: '소파', vending: '자판기', plant: '화분', locker: '사물함',
+    shoes: '신발', car: '차', trash: '쓰레기통', sign: '간판',
 };
 
 /// 걷기 한 바퀴. <b>움직일 때만 돌린다</b> — 멈췄는데 발을 구르면

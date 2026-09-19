@@ -7,7 +7,7 @@
 // 고치는 대상은 <b>게임이 지금 보고 있는 그 방 객체</b>다. 사본이 아니라서
 // 숫자를 만지는 즉시 화면이 바뀐다. 따로 "미리보기"가 없는 것이 그 때문이다.
 
-import { ART } from '../view/art.js';
+import { ART, ART_LABEL } from '../view/art.js';
 import { DRAWERS, KINDS, FIELD_HELP, makeItem, changeKind, isProp } from './defaults.js';
 import { pickAt, itemOf, moveBy, removeFrom, outlineOf } from './pick.js';
 
@@ -53,6 +53,12 @@ const CSS = `
 .chip:hover { border-color: #ff9ec4; }
 .chip img { display: block; width: 100%; height: 34px; object-fit: contain; pointer-events: none; }
 .chip span { font-size: 10px; color: #7c8aa0; }
+
+/* 아직 png가 없는 것. 놓을 수는 있다 — 게임은 그림이 없으면 도형으로 그린다. */
+.chip.missing { border-style: dashed; border-color: #4a3a46; }
+.chip.missing img { visibility: hidden; }
+.chip.missing::before { content: '그림 없음'; display: block; height: 34px; line-height: 34px;
+    margin-bottom: -34px; font-size: 9px; color: #6b5560; }
 
 .field { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
 .field label { width: 78px; color: #9fb0c8; }
@@ -140,7 +146,16 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
             const chip = document.createElement('div');
             chip.className = 'chip';
             chip.draggable = true;
-            chip.innerHTML = `<img src="${ART[art].src}" alt=""><span>${art}</span>`;
+            chip.title = art;
+            chip.innerHTML = `<img src="${ART[art].src}" alt=""><span>${ART_LABEL[art] ?? art}</span>`;
+
+            // png가 아직 없어도 <b>칸은 남겨둔다.</b> 아예 안 보이면 "빠졌나"
+            // 싶어 코드를 뒤지게 된다. 없다고 말해주면 그림만 넣으면 되는 걸 안다.
+            chip.querySelector('img').addEventListener('error', () => {
+                chip.classList.add('missing');
+                chip.title = `${art} — art/${art.replace(/(\d)$/, '-$1')}.png 가 없다`;
+            });
+
             chip.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', art));
             grid.appendChild(chip);
         }

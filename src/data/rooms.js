@@ -45,7 +45,7 @@ export const ROOMS = [
         exit: { x: 890, y: 535, w: 60, h: 105, art: 'exitSide' },
         hazards: [
             { kind: 'rect', x: 0, y: 0, w: 960, h: 159, inBackground: true },
-            { kind: 'cone', x: 430, y: 235, radius: 200, spread: 46, from: 55, to: 125, period: 3.6, art: 'guard' },
+            { kind: 'cone', x: 430, y: 235, radius: 200, spread: 46, from: 55, to: 125, period: 3.6, art: 'watch1' },
         ],
         props: [
             { name: 'plant', x: 70, y: 200, w: 85, h: 85 },
@@ -61,7 +61,7 @@ export const ROOMS = [
             { kind: 'rect', x: 0, y: 0, w: 434, h: 192, inBackground: true },
             { kind: 'rect', x: 526, y: 0, w: 434, h: 192, inBackground: true },
             { kind: 'mover', x: 250, y: 560, w: 140, h: 34, period: 4.4, dx: 300, art: 'cart' },
-            { kind: 'cone', x: 745, y: 300, radius: 165, spread: 48, from: 105, to: 165, period: 3.4, art: 'guard' },
+            { kind: 'cone', x: 745, y: 300, radius: 165, spread: 48, from: 105, to: 165, period: 3.4, art: 'watch2' },
         ],
         props: [
             { name: 'trash', x: 70, y: 560, w: 90, h: 80 },
@@ -86,8 +86,8 @@ export const ROOMS = [
             { kind: 'rect', x: 225, y: 470, w: 120, h: 96, art: 'tteokbokki' },
             { kind: 'rect', x: 620, y: 465, w: 120, h: 96, art: 'chicken' },
             { kind: 'rect', x: 290, y: 320, w: 84, h: 104, art: 'ramen' },
-            { kind: 'cone', x: 245, y: 300, radius: 155, spread: 48, from: 15, to: 75, period: 3.2, art: 'guard' },
-            { kind: 'cone', x: 715, y: 305, radius: 155, spread: 48, from: 105, to: 165, period: 2.8, offset: 0.7, art: 'manager' },
+            { kind: 'cone', x: 245, y: 300, radius: 155, spread: 48, from: 15, to: 75, period: 3.2, art: 'watch2' },
+            { kind: 'cone', x: 715, y: 305, radius: 155, spread: 48, from: 105, to: 165, period: 2.8, offset: 0.7, art: 'watch3' },
         ],
         props: [
             { name: 'trash', x: 830, y: 600, w: 90, h: 80 },
@@ -105,7 +105,7 @@ export const ROOMS = [
             { kind: 'rect', x: 528, y: 0, w: 432, h: 212, inBackground: true },
             { kind: 'spinner', x: 480, y: 400, length: 300, thickness: 22, period: 5, art: 'gate' },
             { kind: 'mover', x: 150, y: 545, w: 140, h: 34, period: 5.4, dx: 430, offset: 0.8, art: 'cart' },
-            { kind: 'cone', x: 215, y: 265, radius: 150, spread: 48, from: 35, to: 95, period: 3.4, art: 'guard' },
+            { kind: 'cone', x: 215, y: 265, radius: 150, spread: 48, from: 35, to: 95, period: 3.4, art: 'watch2' },
         ],
         props: [
             { name: 'plant', x: 780, y: 470, w: 85, h: 85 },
@@ -126,7 +126,7 @@ export const ROOMS = [
             { kind: 'rect', x: 118, y: 0, w: 842, h: 166, inBackground: true },
             { kind: 'blink', x: 470, y: 300, w: 48, h: 60, period: 2, on: 1, art: 'sensor' },
             { kind: 'mover', x: 260, y: 480, w: 140, h: 34, period: 5.2, dx: 280, art: 'cart' },
-            { kind: 'cone', x: 700, y: 215, radius: 170, spread: 48, from: 115, to: 175, period: 3.2, dx: -420, walkPeriod: 6.2, art: 'manager' },
+            { kind: 'cone', x: 700, y: 215, radius: 170, spread: 48, from: 115, to: 175, period: 3.2, dx: -420, walkPeriod: 6.2, art: 'watch3' },
         ],
         props: [
             { name: 'sofa', x: 610, y: 470, w: 170, h: 190 },
@@ -146,7 +146,7 @@ export const ROOMS = [
         exit: { x: 790, y: 185, w: 110, h: 52, art: 'exitSide' },
         hazards: [
             { kind: 'rect', x: 0, y: 0, w: 960, h: 150, inBackground: true },
-            { kind: 'cone', x: 480, y: 205, radius: 190, spread: 46, from: 55, to: 125, period: 3, dx: 220, walkPeriod: 5.6, art: 'manager' },
+            { kind: 'cone', x: 480, y: 205, radius: 190, spread: 46, from: 55, to: 125, period: 3, dx: 220, walkPeriod: 5.6, art: 'watch4' },
             { kind: 'spinner', x: 400, y: 400, length: 280, thickness: 22, period: 3.2, art: 'gate' },
             { kind: 'blink', x: 620, y: 330, w: 48, h: 60, period: 1.8, on: 0.9, offset: 0.6, art: 'sensor' },
             { kind: 'mover', x: 120, y: 545, w: 140, h: 34, period: 3.6, dx: 560, art: 'cart' },

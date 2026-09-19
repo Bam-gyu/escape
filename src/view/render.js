@@ -1,4 +1,4 @@
-import { ART } from './art.js';
+import { ART, WATCHERS } from './art.js';
 import { COLOR } from './palette.js';
 import { ROOM_WIDTH, ROOM_HEIGHT, PLAYER_RADIUS } from '../rules/room.js';
 
@@ -99,20 +99,24 @@ function drawCone(ctx, shape, images) {
     ctx.fill();
     ctx.stroke();
 
-    // 매니저냐 경비냐는 방 데이터가 정한다. 몸통도 시야도 "지금 도형"의 좌표를
+    // 누가 서 있는지는 방 데이터가 정한다. 몸통도 시야도 "지금 도형"의 좌표를
     // 쓰기 때문에, 순찰하는 cone은 여기를 안 고쳐도 알아서 따라 움직인다.
-    const who = shape.of.art === 'manager' ? 'manager' : 'guard';
+    //
+    // <b>사람을 이름으로 받는다.</b> 예전에는 "매니저냐 경비냐" 둘로 갈랐는데,
+    // 그러면 사람을 하나 더 그려 넣어도 코드를 고치기 전에는 화면에 못 나온다.
+    // 지금은 art.js의 WATCHERS에 한 줄 더하면 그것으로 끝난다.
+    const who = WATCHERS.includes(shape.of.art) ? shape.of.art : WATCHERS[0];
     const spec = ART[who];
     const body = { x: shape.x - spec.w / 2, y: shape.y - spec.h, w: spec.w, h: spec.h };
 
     drawArtOrShape(ctx, who, images, body, () => {
-        ctx.fillStyle = who === 'manager' ? COLOR.manager : COLOR.guard;
+        ctx.fillStyle = COLOR[who];
         ctx.fillRect(body.x, body.y + 18, body.w, body.h - 18);
         ctx.beginPath();
         ctx.arc(shape.x, shape.y - spec.h + 16, 17, 0, Math.PI * 2);
         ctx.fillStyle = COLOR.idolHead;
         ctx.fill();
-        ctx.fillStyle = who === 'manager' ? COLOR.managerCap : COLOR.guardCap;
+        ctx.fillStyle = COLOR[`${who}Cap`];
         ctx.fillRect(body.x + 4, body.y, body.w - 8, 12);
     });
 }
