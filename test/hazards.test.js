@@ -141,3 +141,83 @@ test('센서도 offset만큼 박자가 밀린다', () => {
     assert.equal(shapeAt(sensor, 1.5).lethal, false);
     assert.equal(shapeAt(shifted, 1.5).lethal, true);
 });
+
+// ── 가로질러 지나가는 것 ──────────────────────────────────────
+// 도로를 지나가는 차다. 왕복하지 않는다 — 끝까지 가서 화면 밖으로 사라지고,
+// 잠시 뒤 처음 자리에서 다시 나온다.
+
+const car = (extra = {}) => ({
+    kind: 'rect', x: -150, y: 400, w: 150, h: 80,
+    travel: { dx: 1260, dy: 0, duration: 5, gap: 2, loop: true, ...extra },
+});
+
+test('가로지르는 것은 처음 자리에서 출발한다', () => {
+    const shape = shapeAt(car(), 0);
+    assert.equal(shape.x, -150);
+    assert.equal(shape.gone, false);
+});
+
+test('시간이 흐른 만큼 한 방향으로 간다 — 왕복하지 않는다', () => {
+    // 왕복이면 절반에서 제일 멀고 끝에서 돌아온다. 이건 끝이 제일 멀다.
+    assert.equal(shapeAt(car(), 2.5).x, -150 + 1260 / 2);
+    assert.ok(shapeAt(car(), 4.9).x > shapeAt(car(), 2.5).x, '끝으로 갈수록 멀어야 한다');
+});
+
+test('다 가면 사라지고, 사라진 동안은 안 죽인다', () => {
+    const gone = shapeAt(car(), 5.5);
+    assert.equal(gone.gone, true);
+    assert.equal(gone.lethal, false);
+    assert.equal(shapeHitsCircle(gone, gone.x + 10, gone.y + 10, 7), false);
+});
+
+test('텀이 지나면 처음 자리에서 다시 나온다', () => {
+    // duration 5 + gap 2 = 7초마다 한 바퀴.
+    const again = shapeAt(car(), 7);
+    assert.equal(again.x, -150);
+    assert.equal(again.gone, false);
+
+    assert.equal(shapeAt(car(), 7 + 2.5).x, shapeAt(car(), 2.5).x);
+});
+
+test('반복을 끄면 한 번 가고 다시 안 나온다', () => {
+    const once = car({ loop: false });
+    assert.equal(shapeAt(once, 2.5).gone, false);
+    assert.equal(shapeAt(once, 5.5).gone, true);
+    assert.equal(shapeAt(once, 100).gone, true, '반복이 꺼졌으면 영영 없어야 한다');
+});
+
+test('offset은 가로지르기의 박자도 민다', () => {
+    // 차 여러 대를 어긋나게 놓을 때 쓴다.
+    assert.equal(shapeAt(car({ offset: 2.5 }), 0).x, shapeAt(car(), 2.5).x);
+});
+
+test('가로지르기는 종류를 안 가린다', () => {
+    // 종류가 아니라 얹는 것이라서 감시자에도, 도는 막대에도 그대로 붙는다.
+    const watcher = {
+        kind: 'cone', x: 100, y: 300, radius: 160, spread: 46, from: 55, to: 125, period: 3,
+        travel: { dx: 600, dy: 0, duration: 4, gap: 1, loop: true },
+    };
+    assert.equal(shapeAt(watcher, 2).x, 100 + 300);
+    assert.equal(shapeAt(watcher, 4.5).gone, true);
+
+    const bar = {
+        kind: 'spinner', x: 100, y: 300, length: 200, thickness: 20, period: 4,
+        travel: { dx: 0, dy: 400, duration: 4, gap: 1, loop: true },
+    };
+    assert.equal(shapeAt(bar, 2).y, 300 + 200);
+    assert.equal(shapeAt(bar, 4.5).gone, true);
+});
+
+test('가로지르지 않는 함정은 예전과 똑같다', () => {
+    const plain = { kind: 'rect', x: 10, y: 20, w: 30, h: 40 };
+    const shape = shapeAt(plain, 3.7);
+    assert.deepEqual([shape.x, shape.y], [10, 20]);
+    assert.equal(shape.gone, undefined);
+    assert.equal(shape.lethal, true);
+});
+
+test('한 바퀴가 0이어도 안 터진다', () => {
+    // 편집기에서 숫자를 0으로 두는 순간이 있다. 거기서 터지면 방이 안 보인다.
+    const broken = { kind: 'rect', x: 5, y: 5, w: 10, h: 10, travel: { dx: 100, duration: 0, gap: 0, loop: true } };
+    assert.equal(shapeAt(broken, 3).gone, false);
+});

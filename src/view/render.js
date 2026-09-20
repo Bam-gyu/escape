@@ -170,6 +170,10 @@ function markRevealed(ctx, shape) {
 }
 
 function drawHazard(ctx, shape, images, revealed) {
+    // 가로지르다가 화면 밖으로 나간 것. 판정도 없고 그림도 없다 —
+    // 다음 차례가 올 때까지 이 함정은 없는 것이다.
+    if (shape.gone) return;
+
     // 안 보이는 함정. 판정은 살아 있고 그림만 안 그린다 —
     // 게임은 애초에 그림이 있는지도 모르므로 규칙 쪽은 아무 일도 없다.
     const isHidden = shape.of.hidden === true;

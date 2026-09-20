@@ -8,7 +8,10 @@
 // 숫자를 만지는 즉시 화면이 바뀐다. 따로 "미리보기"가 없는 것이 그 때문이다.
 
 import { ART, ART_LABEL } from '../view/art.js';
-import { DRAWERS, KINDS, FIELD_HELP, makeItem, changeKind, isProp } from './defaults.js';
+import {
+    DRAWERS, KINDS, FIELD_HELP, makeItem, changeKind,
+    DEFAULT_TRAVEL, TRAVEL_FIELDS, TRAVEL_HELP,
+} from './defaults.js';
 import { pickAt, itemOf, moveBy, removeFrom, outlineOf } from './pick.js';
 
 const CSS = `
@@ -147,7 +150,7 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
 
     // ── 서랍 ─────────────────────────────────────────────────
     const drawers = $('ed-drawers');
-    for (const { title, arts } of DRAWERS) {
+    for (const { title, as, arts } of DRAWERS) {
         const box = document.createElement('div');
         box.innerHTML = `<h3>${title}</h3><div class="drawer"></div>`;
         const grid = box.querySelector('.drawer');
@@ -166,7 +169,7 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
                 chip.title = `${art} — art/${art.replace(/(\d)$/, '-$1')}.png 가 없다`;
             });
 
-            chip.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', art));
+            chip.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', `${as}:${art}`));
             grid.appendChild(chip);
         }
         drawers.appendChild(box);
@@ -178,13 +181,15 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
         if (!game.admin) return;
         e.preventDefault();
 
-        const art = e.dataTransfer.getData('text/plain');
+        // 어느 서랍에서 끌어왔는지가 같이 온다. 같은 그림이라도 함정 서랍에서
+        // 끌면 닿으면 들키는 것이 되고, 소품 서랍에서 끌면 장식이 된다.
+        const [as, art] = e.dataTransfer.getData('text/plain').split(':');
         if (!ART[art]) return;
 
         const at = toGameCoords(e);
-        const item = makeItem(art, at.x, at.y);
+        const item = makeItem(art, at.x, at.y, as);
 
-        if (isProp(art)) {
+        if (as === 'prop') {
             (room().props ??= []).push(item);
             selection = { what: 'prop', index: room().props.length - 1 };
         } else {
@@ -252,10 +257,67 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
     function fillFields() {
         const item = itemOf(room(), selection);
         if (!item) return;
+
         for (const input of inspector.querySelectorAll('input[type=number]')) {
+            if (document.activeElement === input) continue;
+
+            // f-는 함정 자신의 값, t-는 가로지르기 덩이 안의 값이다.
+            // 가르지 않으면 끌어 옮길 때마다 가로지르기 칸이 0으로 덮인다.
+            const from = input.id.startsWith('t-') ? item.travel : item;
             const key = input.id.slice(2);
-            if (document.activeElement !== input) input.value = String(item[key] ?? 0);
+            if (from) input.value = String(from[key] ?? 0);
         }
+    }
+
+    /// 가로지르기 칸. 켜면 함정이 제 자리에서 한 방향으로 흘러가 화면 밖으로
+    /// 사라지고, 잠시 뒤 처음 자리에서 다시 나온다.
+    ///
+    /// <b>어떤 함정에든 붙는다</b> — 감시자도, 벽도, 소파도. 종류가 아니라
+    /// 얹는 것이라서 종류를 바꿔도 그대로 남는다.
+    function travelBox(item) {
+        const box = document.createElement('div');
+        box.style.marginTop = '10px';
+
+        const head = document.createElement('div');
+        head.className = 'field';
+        head.innerHTML = `<label>가로지르기</label>
+            <input type="checkbox" id="f-travel" ${item.travel ? 'checked' : ''}>
+            <span class="help">맵을 지나가 사라졌다가 처음 자리에서 다시 나온다</span>`;
+        head.querySelector('input').addEventListener('change', e => {
+            if (e.target.checked) item.travel = { ...DEFAULT_TRAVEL };
+            else delete item.travel;
+            drawInspector();
+        });
+        box.appendChild(head);
+
+        if (!item.travel) return box;
+
+        for (const key of TRAVEL_FIELDS) {
+            const row = document.createElement('div');
+            row.className = 'field';
+            row.innerHTML = `<label for="t-${key}">${key}</label>
+                <input type="number" id="t-${key}" step="${key === 'duration' || key === 'gap' || key === 'offset' ? '0.1' : '10'}"
+                    value="${item.travel[key] ?? 0}">
+                <span class="help">${TRAVEL_HELP[key] ?? ''}</span>`;
+            const input = row.querySelector('input');
+            input.addEventListener('input', () => {
+                const v = Number(input.value);
+                if (Number.isFinite(v)) item.travel[key] = v;
+            });
+            box.appendChild(row);
+        }
+
+        const loop = document.createElement('div');
+        loop.className = 'field';
+        loop.innerHTML = `<label>반복</label>
+            <input type="checkbox" id="t-loop" ${item.travel.loop ? 'checked' : ''}>
+            <span class="help">끄면 한 번 지나가고 다시 안 나온다</span>`;
+        loop.querySelector('input').addEventListener('change', e => {
+            item.travel.loop = e.target.checked;
+        });
+        box.appendChild(loop);
+
+        return box;
     }
 
     function drawInspector() {
@@ -319,6 +381,8 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
                 if (e.target.checked) item.inBackground = true; else delete item.inBackground;
             });
             inspector.appendChild(bg);
+
+            inspector.appendChild(travelBox(item));
 
             const remove = document.createElement('button');
             remove.type = 'button';

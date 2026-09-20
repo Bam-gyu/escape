@@ -245,3 +245,86 @@ test('방이 쓰는 사람은 모두 그릴 줄 아는 사람이다', async () =
         }
     }
 });
+
+// ── 가로지르기는 얹는 것이다 ──────────────────────────────────
+
+test('종류를 바꿔도 가로지르기가 남는다', () => {
+    // 종류가 아니라 얹는 것이다. 종류를 바꿨다고 지워지면 다시 다 적어야 한다.
+    const car = { ...makeItem('car', 400, 300), travel: { dx: 1200, duration: 5, gap: 2, loop: true } };
+
+    for (const kind of ['blink', 'mover', 'spinner', 'cone', 'rect']) {
+        const after = changeKind(car, kind);
+        assert.deepEqual(after.travel, car.travel, `${kind}으로 바꾸니 가로지르기가 사라졌다`);
+    }
+});
+
+test('종류를 바꾸면 가로지르기 덩이도 새로 뜬다', () => {
+    // 같은 덩이를 나눠 쓰면 새 함정을 고칠 때 옛 함정까지 같이 바뀐다.
+    const car = { ...makeItem('car', 400, 300), travel: { dx: 1200, duration: 5, gap: 2, loop: true } };
+    const after = changeKind(car, 'blink');
+
+    after.travel.dx = 99;
+    assert.equal(car.travel.dx, 1200, '옛 함정의 값까지 바뀌었다');
+});
+
+test('가로지르기가 없으면 안 생긴다', () => {
+    assert.equal(changeKind(makeItem('crack', 400, 300), 'blink').travel, undefined);
+});
+
+test('사라져 있는 동안은 안 집힌다', async () => {
+    // 안 보이고 안 죽이는데 집히면, 원래 자리에서 그 밑의 것을 가린다.
+    const r = {
+        name: '길',
+        spawn: { x: 480, y: 650 },
+        exit: { x: 890, y: 535, w: 60, h: 105 },
+        hazards: [{
+            kind: 'rect', x: 100, y: 400, w: 150, h: 80,
+            travel: { dx: 1200, dy: 0, duration: 5, gap: 2, loop: true },
+        }],
+        props: [],
+    };
+
+    // 0초에는 처음 자리에 있다
+    assert.deepEqual(pickAt(r, 150, 440, 0), { what: 'hazard', index: 0 });
+    // 5.5초에는 사라져 있다 — 그 자리를 눌러도 안 집힌다
+    assert.equal(pickAt(r, 150, 440, 5.5), null);
+    // 테두리도 안 나온다
+    assert.equal(outlineOf(r, { what: 'hazard', index: 0 }, 5.5), null);
+});
+
+test('사라진 함정 밑의 소품이 집힌다', () => {
+    const r = {
+        name: '길',
+        spawn: { x: 480, y: 650 },
+        exit: { x: 890, y: 535, w: 60, h: 105 },
+        hazards: [{
+            kind: 'rect', x: 100, y: 400, w: 150, h: 80,
+            travel: { dx: 1200, dy: 0, duration: 5, gap: 2, loop: true },
+        }],
+        props: [{ name: 'trash', x: 120, y: 420, w: 60, h: 60 }],
+    };
+
+    assert.deepEqual(pickAt(r, 150, 440, 0), { what: 'hazard', index: 0 });
+    assert.deepEqual(pickAt(r, 150, 440, 5.5), { what: 'prop', index: 0 });
+});
+
+test('소품 그림도 함정으로 놓을 수 있다', () => {
+    // 같은 소파라도 어느 서랍에서 끌었는지로 갈린다.
+    const asProp = makeItem('sofa', 400, 300, 'prop');
+    const asHazard = makeItem('sofa', 400, 300, 'hazard');
+
+    assert.equal(asProp.name, 'sofa');
+    assert.equal(asProp.kind, undefined);
+    assert.equal(asHazard.kind, 'rect');
+    assert.equal(asHazard.art, 'sofa');
+});
+
+test('두 서랍이 같은 그림을 갖되 하는 일이 다르다', async () => {
+    const { DRAWERS } = await import('../src/editor/defaults.js');
+    const hazardDrawer = DRAWERS.find(d => d.as === 'hazard' && d.arts.includes('sofa'));
+    const propDrawer = DRAWERS.find(d => d.as === 'prop');
+
+    assert.ok(hazardDrawer, '소품 그림이 함정 서랍에 없다');
+    assert.ok(propDrawer.arts.includes('sofa'), '소품 서랍에서 빠졌다');
+    for (const d of DRAWERS) assert.ok(d.as, `'${d.title}' 서랍에 as가 없다`);
+});

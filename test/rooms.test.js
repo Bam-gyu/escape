@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ROOMS } from '../src/data/rooms.js';
 import { stepRoom, ROOM_WIDTH, ROOM_HEIGHT, PLAYER_RADIUS } from '../src/rules/room.js';
-import { shapeHitsCircle } from '../src/rules/hazards.js';
+import { shapeHitsCircle, shapeAt } from '../src/rules/hazards.js';
 
 /// 15초를 1/60초 간격으로 훑는다. 방에 있는 가장 긴 주기보다 넉넉히 길다.
 function* everyFrame(seconds = 15) {
@@ -79,6 +79,22 @@ test('죽는 것이 도착보다 먼저다', () => {
     assert.equal(state.cleared, false);
 });
 
+/// 가로지르는 함정이 방 한가운데에 들어와 있는 때. 없으면 null.
+///
+/// <b>화면을 지나가기만 하고 방에 안 들어오는 함정</b>은 놓은 사람이 실수한 것이다.
+/// y를 잘못 줘서 도로가 아니라 화면 아래를 지나가는 차 같은 것 — 검사가 잡는다.
+function momentInsideRoom(hazard) {
+    for (let t = 0; t < 30; t += 0.05) {
+        const shape = shapeAt(hazard, t);
+        if (shape.gone) continue;
+
+        const inside = shape.x >= 0 && shape.x + shape.w <= ROOM_WIDTH
+            && shape.y >= 0 && shape.y + shape.h <= ROOM_HEIGHT;
+        if (inside) return Math.round(t * 100) / 100;
+    }
+    return null;
+}
+
 test('함정에 닿으면 죽는다', () => {
     // 특정 좌표를 적어두지 않는다. 방을 고칠 때마다 이 검사가 같이 깨져서
     // 진짜 고장과 방 수정을 구별할 수 없게 되기 때문이다.
@@ -88,9 +104,16 @@ test('함정에 닿으면 죽는다', () => {
     for (const room of ROOMS) {
         for (const hazard of room.hazards) {
             if (hazard.kind !== 'rect') continue;
-            const state = stepRoom(room, hazard.x + hazard.w / 2, hazard.y + hazard.h / 2, 0);
+
+            // 가로지르는 것은 <b>화면 밖에서 시작한다.</b> 그래서 0초에 밟아보면
+            // 방 밖이라 못 밟는다. 방 안에 들어와 있는 순간을 찾아서 밟는다.
+            const t = hazard.travel ? momentInsideRoom(hazard) : 0;
+            assert.ok(t !== null, `${room.name}: ${hazard.art}가 방 안에 들어오는 때가 없다`);
+
+            const shape = shapeAt(hazard, t);
+            const state = stepRoom(room, shape.x + shape.w / 2, shape.y + shape.h / 2, t);
             assert.equal(state.dead, true,
-                `${room.name}: ${hazard.art ?? '벽'} 한가운데를 밟았는데 안 죽는다`);
+                `${room.name}: ${hazard.art ?? '벽'} 한가운데를 밟았는데 안 죽는다 (${t}초)`);
             checked++;
         }
     }

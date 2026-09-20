@@ -17,8 +17,12 @@ const HAZARD_FIELDS = [
     'period', 'on',
     'dx', 'dy', 'walkPeriod', 'walkOffset',
     'offset',
+    'travel',
     'art', 'hidden', 'inBackground',
 ];
+
+/// 가로지르기. 함정 안에 덩이 하나로 들어간다.
+const TRAVEL_FIELDS = ['dx', 'dy', 'duration', 'gap', 'offset', 'loop'];
 
 const PROP_FIELDS = ['name', 'x', 'y', 'w', 'h'];
 const BOX_FIELDS = ['x', 'y', 'w', 'h', 'art'];
@@ -36,6 +40,8 @@ function quote(text) {
 function value(v) {
     if (typeof v === 'number') return num(v);
     if (typeof v === 'boolean') return String(v);
+    // 겹친 덩이는 하나뿐이다(travel). 더 생기면 여기에 갈래를 얹는다.
+    if (v && typeof v === 'object') return inline(v, TRAVEL_FIELDS);
     return quote(v);
 }
 

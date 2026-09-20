@@ -17,6 +17,11 @@ const HANDLE = 26;
 /// 중요하다. 오가는 카트는 x가 왼쪽 끝일 때의 자리를 들고 있어서, 그것으로 잡으면
 /// 화면에서 카트가 보이는 곳을 눌러도 안 집히고 아무것도 없는 허공에서 집힌다.
 function hitsShape(shape, x, y) {
+    // 가로지르다가 화면 밖으로 나간 것. 안 보이고 안 죽이니 안 집혀야 한다 —
+    // 안 그러면 사라진 함정이 원래 자리에서 그 밑의 것을 가린다.
+    // 시간 막대를 옮겨 보이는 때로 가면 그때 집으면 된다.
+    if (shape.gone) return false;
+
     if (shape.kind === 'sector') return near(shape.x, shape.y, x, y, HANDLE);
     if (shape.kind === 'obb') return near(shape.x, shape.y, x, y, Math.max(HANDLE, shape.h ?? 0));
     return inBox(shape, x, y);
@@ -85,6 +90,7 @@ export function outlineOf(room, selection, t = 0) {
     }
 
     const shape = shapeAt(item, t);
+    if (shape.gone) return null;
     if (shape.kind === 'sector' || shape.kind === 'obb') {
         const r = shape.kind === 'obb' ? Math.max(HANDLE, shape.h ?? 0) : HANDLE;
         return { x: shape.x - r, y: shape.y - r, w: r * 2, h: r * 2, round: true };

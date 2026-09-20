@@ -17,6 +17,13 @@
 //            매니저·경비의 시야. 각도는 0이 오른쪽, 90이 아래쪽이다.
 //            + {dx, dy, walkPeriod, walkOffset} 을 주면 시야를 든 채 왕복한다
 //
+// travel: { dx, dy, duration, gap, offset, loop }
+//   <b>종류를 안 가린다.</b> 어떤 함정에든 얹으면 그만큼 한 방향으로 흘러간다.
+//   다 가면 사라지고(안 죽인다, 안 그린다) gap초 뒤 처음 자리에서 다시 나온다.
+//   loop를 빼면 한 번 가고 끝이다. mover와 달리 왕복하지 않는다 —
+//   도로를 지나가는 차는 끝에서 되돌아오지 않는다.
+//   화면 밖에서 들어오게 하려면 x를 음수로 두고 dx를 960보다 크게 준다.
+//
 // offset은 초 단위로 시작 시점을 밀어 함정끼리 박자를 어긋나게 할 때 쓴다.
 // cone의 walkPeriod는 걷는 주기다. 안 주면 보는 주기와 같아지는데, 같으면
 // "오른쪽으로 갈 때는 늘 오른쪽을 본다"가 되어 안전한 쪽이 고정된다. 따로 주는 게 낫다.
@@ -52,7 +59,12 @@ export const ROOMS = [
         ],
     },
     {
-        note: ['오가는 청소 카트를 배운다.'],
+        note: [
+            '오가는 청소 카트를 배운다.',
+            '',
+            '도로를 가로지르는 차도 여기서 처음 나온다. 왕복하는 카트와 달리',
+            '한 방향으로 지나가 사라졌다가 잠시 뒤 다시 온다 — 건널목의 박자다.',
+        ],
         name: '헬스장 외부',
         background: 'bgStreet',
         spawn: { x: 480, y: 650 },
@@ -62,6 +74,7 @@ export const ROOMS = [
             { kind: 'rect', x: 526, y: 0, w: 434, h: 192, inBackground: true },
             { kind: 'mover', x: 250, y: 560, w: 140, h: 34, period: 4.4, dx: 300, art: 'cart' },
             { kind: 'cone', x: 745, y: 300, radius: 165, spread: 48, from: 105, to: 165, period: 3.4, art: 'watch2' },
+            { kind: 'rect', x: -170, y: 396, w: 150, h: 80, travel: { dx: 1300, dy: 0, duration: 4.6, gap: 2.4, loop: true }, art: 'car' },
         ],
         props: [
             { name: 'trash', x: 70, y: 560, w: 90, h: 80 },

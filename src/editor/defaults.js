@@ -82,13 +82,31 @@ const HAZARD_ARTS = [
 ///
 /// <b>감시하는 사람을 맨 위 서랍에 따로 둔다.</b> 방을 짤 때 제일 먼저 놓는 것이
 /// 사람이고, 함정 열댓 개에 섞여 있으면 매번 찾아야 한다.
+///
+/// 소품 그림은 <b>두 서랍에 다 있다.</b> 같은 소파라도 그냥 놓여 있는 소파와
+/// 닿으면 들키는 소파는 다른 것이다. 어느 서랍에서 끌어왔는지로 갈린다 —
+/// 그래서 서랍이 `as`를 들고 있고, 끌 때 그것까지 같이 넘어간다.
 export const DRAWERS = [
-    { title: '감시하는 사람 — 놓으면 시야가 된다', arts: [...WATCHERS] },
-    { title: '함정', arts: HAZARD_ARTS },
-    { title: '소품 — 판정 없음', arts: PROP_ARTS },
+    { title: '감시하는 사람 — 놓으면 시야가 된다', as: 'hazard', arts: [...WATCHERS] },
+    { title: '함정 — 닿으면 들킨다', as: 'hazard', arts: [...HAZARD_ARTS, ...PROP_ARTS] },
+    { title: '소품 — 판정 없음', as: 'prop', arts: PROP_ARTS },
 ];
 
 export const isProp = art => PROP_ARTS.includes(art);
+
+/// 끌어다 놓았을 때의 기본 가로지르기. 도로를 지나가는 차를 기준으로 잡았다 —
+/// 화면(960) 너비보다 넉넉히 가야 반대편 <b>밖으로</b> 완전히 빠진다.
+export const DEFAULT_TRAVEL = { dx: 1200, dy: 0, duration: 5, gap: 2, loop: true };
+
+/// 가로지르기 칸과 그 뜻.
+export const TRAVEL_FIELDS = ['dx', 'dy', 'duration', 'gap', 'offset'];
+export const TRAVEL_HELP = {
+    dx: '가로로 가는 거리. 화면 밖까지 가려면 960보다 크게',
+    dy: '세로로 가는 거리',
+    duration: '끝까지 가는 데 걸리는 초. 짧을수록 빠르다',
+    gap: '사라져 있는 초. 이 동안은 안 죽인다',
+    offset: '시작 박자를 미는 초. 차 여러 대를 어긋나게 할 때',
+};
 
 /// x·y가 <b>가운데</b>를 뜻하는 종류. 나머지는 왼쪽 위 모서리다.
 /// 이 갈림이 편집기에서 가장 자주 사고를 내는 자리라 한 곳에 모아 둔다.
@@ -122,8 +140,8 @@ function base(kind, x, y, art) {
 
 /// 그림 하나를 x·y에 놓았을 때 생기는 것.
 /// cone과 spinner의 x·y는 <b>가운데</b>라서 왼쪽 위로 밀지 않는다.
-export function makeItem(art, x, y) {
-    if (isProp(art)) {
+export function makeItem(art, x, y, as = isProp(art) ? 'prop' : 'hazard') {
+    if (as === 'prop') {
         const spec = ART[art] ?? {};
         const w = spec.w ?? 110;
         const h = spec.h ?? 90;
@@ -164,5 +182,11 @@ export function changeKind(item, kind) {
 
     if (item.hidden) next.hidden = true;
     if (item.inBackground) next.inBackground = true;
+
+    // 가로지르기는 <b>종류가 아니라 얹는 것</b>이라 종류를 바꿔도 남아야 한다.
+    // 덩이째 넘기되 새로 뜬다 — 같은 덩이를 나눠 쓰면 한쪽을 고칠 때
+    // 옛 함정의 값까지 같이 바뀐다.
+    if (item.travel) next.travel = { ...item.travel };
+
     return next;
 }

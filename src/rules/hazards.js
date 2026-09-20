@@ -16,12 +16,67 @@ export function spin(t, period) {
     return 360 * t / period;
 }
 
+/// 한 방향으로 가로질러 갔다가 사라지고, 잠시 뒤 처음 자리에 다시 나타난다.
+///
+/// <b>종류가 아니라 얹는 것이다.</b> `travel`을 준 함정은 무엇이든 — 벽이든
+/// 감시자든 — 제자리에서 그만큼 흘러간다. 새 종류로 만들었다면 움직이는 벽,
+/// 움직이는 센서, 움직이는 감시자를 따로 만들어야 했다.
+///
+/// `mover`와 다른 점은 <b>왕복하지 않는다</b>는 것이다. 도로를 지나가는 차는
+/// 끝까지 갔다가 되돌아오지 않는다. 화면 밖으로 나가 사라졌다가, `gap`초 뒤
+/// 처음 자리에서 다시 나온다. `loop`가 거짓이면 한 번 가고 끝이다.
+///
+///   travel: { dx, dy, duration, gap, offset, loop }
+///
+/// 돌려주는 `gone`은 "지금은 화면에 없다"는 뜻이다. 이때는 안 죽이고 안 그린다.
+export function travelAt(travel, t) {
+    if (!travel) return { ox: 0, oy: 0, gone: false };
+
+    const duration = travel.duration ?? 0;
+    const gap = travel.gap ?? 0;
+    const cycle = duration + gap;
+    const time = t + (travel.offset ?? 0);
+
+    // 한 번만 가는 것. 다 가고 나면 영영 없다.
+    if (!travel.loop) {
+        if (time >= duration) return { ox: 0, oy: 0, gone: true };
+        const k = duration > 0 ? Math.max(0, time) / duration : 0;
+        return { ox: (travel.dx ?? 0) * k, oy: (travel.dy ?? 0) * k, gone: false };
+    }
+
+    // 한 바퀴가 0이면 시간이 안 흐르는 것과 같다. 나누기 전에 막는다.
+    if (cycle <= 0) return { ox: 0, oy: 0, gone: false };
+
+    const phase = ((time % cycle) + cycle) % cycle;
+    if (phase >= duration) return { ox: 0, oy: 0, gone: true };
+
+    const k = duration > 0 ? phase / duration : 0;
+    return { ox: (travel.dx ?? 0) * k, oy: (travel.dy ?? 0) * k, gone: false };
+}
+
+/// 제자리의 도형에 가로지르기를 얹는다. travel이 없으면 그대로 돌려준다.
+function withTravel(hazard, t, shape) {
+    const { ox, oy, gone } = travelAt(hazard.travel, t);
+    if (!hazard.travel) return shape;
+
+    shape.x += ox;
+    shape.y += oy;
+    shape.gone = gone;
+    if (gone) shape.lethal = false;
+    return shape;
+}
+
 /// 지금 이 함정이 차지하고 있는 도형.
 ///
 /// <b>시간만 넣으면 나머지는 정해진다.</b> 함정은 자기 상태를 들고 있지 않아서
 /// 되감아도, 건너뛰어도, 두 번 물어도 같은 답이 나온다. 죽고 다시 시작할 때
 /// 함정을 되돌리는 코드가 따로 필요 없는 이유다.
 export function shapeAt(hazard, t) {
+    return withTravel(hazard, t, shapeInPlace(hazard, t));
+}
+
+/// 가로지르기를 빼고, 제자리에서의 모습만. 종류별 갈래는 여기 하나뿐이다.
+function shapeInPlace(hazard, t) {
     switch (hazard.kind) {
         case 'rect':
             return { kind: 'rect', x: hazard.x, y: hazard.y, w: hazard.w, h: hazard.h, lethal: true, of: hazard };
