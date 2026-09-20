@@ -1,5 +1,6 @@
 import { ROOMS } from './data/rooms.js';
 import { stepRoom, ROOM_WIDTH, ROOM_HEIGHT } from './rules/room.js';
+import { toRoomDelta, movedPointer } from './view/pointer.js';
 import { loadArt, caughtArtFor, IDOL_WALK, WALK_FRAME_SECONDS } from './view/art.js';
 import { createAudio, musicFor } from './view/audio.js';
 import { drawRoom } from './view/render.js';
@@ -62,6 +63,36 @@ const game = {
     editTime: 0,
     editPaused: false,
 
+    /// 마우스를 브라우저가 붙잡고 있는가.
+    ///
+    /// 붙잡고 있으면 커서는 사라지고 <b>"얼마나 움직였는지"만</b> 온다.
+    /// 그러면 주인공의 자리를 게임이 온전히 정할 수 있어서, 방을 넘어갈 때
+    /// 시작 자리에 세워놓고 곧바로 조작할 수 있다.
+    ///
+    /// 못 잡았을 때(터치, 거절, Esc)는 예전처럼 커서 자리를 그대로 쓴다.
+    locked: false,
+
+    /// 다시 시작하려면 커서가 와야 하는 자리. 마우스를 못 붙잡았을 때만 쓴다.
+    ///
+    /// 방에 들어갈 때는 시작 자리, Esc로 놓았을 때는 <b>주인공이 서 있던 자리</b>다.
+    /// 놓은 자리에서 이어가야 하니까 — 시작 자리로 되돌리면 지나온 길을 또 가야 한다.
+    readyAt: { ...ROOMS[startRoom].spawn },
+
+    /// 다시 시작할 때 돌려놓을 방 시계(초).
+    ///
+    /// 방에 들어갈 때와 들킨 뒤에는 0이지만, <b>Esc로 놓았을 때는 놓은 그 순간</b>이다.
+    /// 0으로 되돌리면 안 움직였는데 죽는다 — 방금 지나간 시야가 다시 그 자리에 온다.
+    /// 반대로 Esc를 연타해 함정 박자를 처음으로 되감는 꼼수도 된다.
+    readyT: 0,
+
+    /// game.pointer가 <b>진짜 커서에서 온 값인가.</b>
+    ///
+    /// 잠긴 동안 pointer는 게임이 셈한 주인공 자리지 커서 자리가 아니다.
+    /// 놓는 순간 브라우저는 커서를 잠그기 시작한 자리로 되돌려 놓는데,
+    /// 그걸 모르고 "커서가 이미 제자리에 있다"고 판단하면 멈추자마자 풀리고,
+    /// 다음 마우스 움직임에 주인공이 그 옛 자리로 순간이동한다.
+    pointerFresh: true,
+
     /// 주인공을 그리는가. 방을 짤 때만 끈다.
     /// 주인공이 함정 위에 겹쳐 서 있으면 그 함정이 어떻게 생겼는지 볼 수가 없는데,
     /// 커서를 따라다니는 게임이라 <b>손을 치울 수가 없다.</b>
@@ -89,8 +120,23 @@ function placeGoButton() {
 
 function enterRoom(index) {
     game.roomIndex = index;
-    game.screen = 'ready';
     game.enteredAt = performance.now();
+
+    // 마우스를 붙잡고 있으면 <b>기다릴 이유가 없다.</b> 주인공을 시작 자리에
+    // 세워놓고 바로 시작한다 — 커서가 따로 있지 않으니 튀어나올 자리도 없다.
+    //
+    // 못 붙잡았으면 예전 규칙을 쓴다. 커서가 시작 자리에 올 때까지 기다린다.
+    // 이게 없으면 앞 방에서 커서가 있던 자리에 주인공이 튀어나와 그대로 죽는다.
+    game.readyAt = { ...ROOMS[index].spawn };
+    game.readyT = 0;
+    game.pointerFresh = !game.locked;
+
+    if (game.locked) {
+        game.pointer = { ...game.readyAt };
+        game.screen = 'play';
+    } else {
+        game.screen = 'ready';
+    }
 
     // 새 방의 첫 모습을 여기서 바로 만들어 둔다. <b>null로 비우면 안 된다.</b>
     // 방을 통과했을 때만은 enterRoom이 update() 안에서 불려서, 같은 프레임의
@@ -121,10 +167,73 @@ function toGameCoords(event) {
     };
 }
 
+const ROOM = { width: ROOM_WIDTH, height: ROOM_HEIGHT };
+
 function onPointerMove(event) {
+    if (game.locked) {
+        // 잠긴 동안 들어온 터치는 버린다. 절대 좌표를 그대로 쓰면
+        // 주인공이 화면 반대쪽으로 순간이동해 그대로 죽는다.
+        if (event.touches) { event.preventDefault(); return; }
+
+        // 붙잡고 있을 때는 커서 자리가 없다. 움직인 만큼 더해 나간다.
+        const delta = toRoomDelta(
+            { x: event.movementX, y: event.movementY },
+            canvas.getBoundingClientRect(), ROOM);
+        game.pointer = movedPointer(game.pointer, delta, ROOM);
+        return;
+    }
+
     game.pointer = toGameCoords(event);
+    game.pointerFresh = true;
     if (event.touches) event.preventDefault();
 }
+
+/// 마우스를 붙잡아 달라고 부탁한다. 거절당해도 조용히 넘어간다 —
+/// 그때는 예전 방식(커서 자리를 그대로 쓰기)으로 그냥 돌아간다.
+function grabMouse() {
+    if (game.admin || game.locked) return;
+    try {
+        const asked = canvas.requestPointerLock?.();
+        if (asked?.catch) asked.catch(() => { });
+    } catch { /* 안 되면 안 되는 대로 */ }
+}
+
+/// 멈춰 있던 자리에서 이어 간다. <b>함정 시계도 그 자리에서 이어진다.</b>
+function resumePlay() {
+    game.screen = 'play';
+    game.enteredAt = performance.now() - game.readyT * 1000;
+}
+
+/// 지금 자리에서 멈춘다. 커서가 그 자리에 오거나 화면을 누르면 다시 간다.
+///
+/// <b>'멈춤'이라는 상태를 따로 두지 않는다.</b> 처음에 따로 뒀더니 마우스를
+/// 못 붙잡는 환경에서 거기서 빠져나올 길이 없었다 — 누르면 붙잡기만 시도하고,
+/// 거절당하면 영영 멈춘 채로 남았다. 기다리는 화면은 원래 있던 것 하나면 된다.
+function holdHere() {
+    game.readyAt = { ...game.pointer };
+    game.readyT = (performance.now() - game.enteredAt) / 1000;
+    game.screen = 'ready';
+
+    // 커서가 어디 있는지 아직 모른다. 진짜 움직임이 한 번 올 때까지 기다린다.
+    game.pointerFresh = false;
+}
+
+document.addEventListener('pointerlockchange', () => {
+    game.locked = document.pointerLockElement === canvas;
+
+    // 붙잡은 순간 기다릴 이유가 없어진다. 기다리던 자리에 세우고 곧바로 간다.
+    if (game.locked && game.screen === 'ready') {
+        game.pointer = { ...game.readyAt };
+        resumePlay();
+        return;
+    }
+
+    // Esc로 풀렸다. 게임 중이었으면 그 자리에서 멈춘다 —
+    // 손을 뗀 사이에 죽으면 자기가 뭘 잘못했는지 알 수 없는 죽음이 된다.
+    if (!game.locked && game.screen === 'play' && !game.admin) holdHere();
+});
+
+document.addEventListener('pointerlockerror', () => { game.locked = false; });
 
 canvas.addEventListener('mousemove', onPointerMove);
 canvas.addEventListener('touchmove', onPointerMove, { passive: false });
@@ -139,7 +248,11 @@ canvas.addEventListener('click', () => {
     }
 
     if (game.screen === 'opening') { showIntro(); return; }
-    if (game.screen === 'dead') { restartRoom(); return; }
+
+    // 기다리는 중에 누르면 마우스를 붙잡아 본다. 붙잡히면 곧바로 이어진다.
+    // 안 붙잡혀도 괜찮다 — 커서를 그 자리로 옮기면 예전처럼 시작된다.
+    if (game.screen === 'ready') { grabMouse(); return; }
+    if (game.screen === 'dead') { grabMouse(); restartRoom(); return; }
 
     if (game.screen === 'ending') { game.deaths = 0; showTitle(); return; }
     if (game.screen === 'clear') { game.deaths = 0; showTitle(); }
@@ -175,17 +288,31 @@ async function toggleAdmin() {
     game.admin = !game.admin;
     game.showHitboxes = game.admin;
 
+    // 편집기는 진짜 커서로 끌고 놓는 것이라 마우스를 놓아줘야 한다.
+    // 다시 닫으면 '멈췄다'가 뜨고, 누르면 그때 다시 붙잡는다.
+    if (game.admin) document.exitPointerLock?.();
+
     if (!game.admin) {
         // 꺼둔 채로 편집기를 닫으면 주인공 없는 게임이 된다. 반드시 되돌린다.
         game.showPlayer = true;
         game.editor?.setOpen(false);
+
+        // 마우스를 다시 붙잡으려면 사람의 손길이 필요하다. 그 자리에서 기다린다.
+        if (game.screen === 'play') holdHere();
         return;
     }
 
     // 타이틀이나 연출 중에 눌렀어도 곧장 방으로 들어간다.
     titleScreen.hidden = true;
     introScreen.hidden = true;
-    if (game.screen !== 'play') { enterRoom(game.roomIndex); game.screen = 'play'; }
+
+    // 방 밖(타이틀·연출·엔딩)에서 눌렀을 때만 방을 새로 연다.
+    // <b>기다리는 중이었으면 그대로 둔다</b> — enterRoom을 부르면 함정 시계도
+    // 드러난 숨은 함정 기억도 초기화되어, 10초까지 온 것이 0초로 되감긴다.
+    if (['title', 'opening', 'intro', 'ending'].includes(game.screen)) {
+        enterRoom(game.roomIndex);
+    }
+    if (game.screen !== 'play') resumePlay();
 
     editorLoading ??= import('./editor/panel.js').then(({ createEditor }) => createEditor({
         canvas, game, rooms: ROOMS, toGameCoords,
@@ -207,6 +334,9 @@ function restartRoom() {
 
 /// 타이틀로 돌아간다. 다 깬 뒤와 처음 열었을 때 쓴다.
 function showTitle() {
+    // 잠긴 채로 타이틀에 오면 마우스 이벤트가 전부 캔버스로 가서
+    // [게임 시작] 버튼을 누를 수가 없다. 게임 밖에서는 진짜 커서를 돌려준다.
+    document.exitPointerLock?.();
     game.screen = 'title';
     introScreen.hidden = true;
     titleScreen.hidden = false;
@@ -247,15 +377,25 @@ goButton.addEventListener('click', event => {
     game.pointer = pullToward(toGameCoords(event), ROOMS[startRoom].spawn, READY_RADIUS);
     introScreen.hidden = true;
     audio.play('click');
+
+    // 누른 것이 사람의 손길이라 여기서만 마우스를 붙잡을 수 있다.
+    // 붙잡히면 이 방부터 기다림이 사라진다.
+    grabMouse();
     enterRoom(startRoom);
 });
 
 function update(now) {
     if (game.screen === 'ready') {
-        const spawn = room().spawn;
-        const reached = Math.hypot(game.pointer.x - spawn.x, game.pointer.y - spawn.y) <= READY_RADIUS;
-        game.last = stepRoom(room(), spawn.x, spawn.y, 0);
-        if (reached) { game.screen = 'play'; game.enteredAt = now; }
+        const at = game.readyAt;
+
+        // 멈춰 있는 동안 보여주는 것은 <b>다시 시작할 그 순간의 모습</b>이다.
+        // 0초의 모습을 보여주면 눈으로 본 것과 시작하는 것이 달라진다.
+        game.last = stepRoom(room(), at.x, at.y, game.readyT);
+
+        // 진짜 커서가 한 번이라도 움직였어야 자리를 견줄 수 있다.
+        const reached = game.pointerFresh
+            && Math.hypot(game.pointer.x - at.x, game.pointer.y - at.y) <= READY_RADIUS;
+        if (reached) resumePlay();
         return;
     }
 
@@ -274,6 +414,7 @@ function update(now) {
     }
 
     if (game.screen !== 'play') return;
+
 
     // 관리자 모드에서는 편집기의 시계를 쓴다. 멈춘 시간 위에 함정을 놓을 수 있어야 한다.
     const t = game.admin ? game.editTime : (now - game.enteredAt) / 1000;
@@ -298,6 +439,7 @@ function update(now) {
         if (game.roomIndex + 1 < ROOMS.length) {
             enterRoom(game.roomIndex + 1);
         } else {
+            document.exitPointerLock?.();
             game.screen = 'ending';
         }
     }
@@ -322,7 +464,7 @@ function label(text, x, y, size, align = 'left', color = '#f3eee6') {
 }
 
 function drawReadyMark() {
-    const spawn = room().spawn;
+    const spawn = game.readyAt;
     ctx.setLineDash([8, 6]);
     ctx.beginPath();
     ctx.arc(spawn.x, spawn.y, READY_RADIUS, 0, Math.PI * 2);
