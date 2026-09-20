@@ -62,3 +62,30 @@ test('작은 따옴표가 든 이름도 깨지지 않는다', async () => {
     const rooms = await roundTrip([{ ...ROOMS[0], name: "매니저's 방" }]);
     assert.equal(rooms[0].name, "매니저's 방");
 });
+
+test('뒤집기와 가로지르기가 저장되고 다시 읽힌다', async () => {
+    const rooms = await roundTrip([{
+        ...ROOMS[0],
+        exit: { ...ROOMS[0].exit, inBackground: true },
+        hazards: [{
+            kind: 'rect', x: -170, y: 396, w: 150, h: 80, art: 'car', flip: true,
+            travel: { dx: -1300, dy: 0, duration: 4.6, gap: 2.4, loop: true },
+        }],
+        props: [{ name: 'car', x: 10, y: 20, w: 30, h: 40, flip: true }],
+    }]);
+
+    const car = rooms[0].hazards[0];
+    assert.equal(car.flip, true);
+    assert.deepEqual(car.travel, { dx: -1300, dy: 0, duration: 4.6, gap: 2.4, loop: true });
+    assert.equal(rooms[0].props[0].flip, true);
+    assert.equal(rooms[0].exit.inBackground, true);
+});
+
+test('반복을 끈 것도 그대로 저장된다', async () => {
+    // loop: false는 "적어둘 값이 없다"와 다르다. 빠지면 반복하는 것이 되어버린다.
+    const rooms = await roundTrip([{
+        ...ROOMS[0],
+        hazards: [{ kind: 'rect', x: 0, y: 0, w: 10, h: 10, travel: { dx: 100, duration: 2, gap: 1, loop: false } }],
+    }]);
+    assert.equal(rooms[0].hazards[0].travel.loop, false);
+});

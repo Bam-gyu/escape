@@ -18,14 +18,14 @@ const HAZARD_FIELDS = [
     'dx', 'dy', 'walkPeriod', 'walkOffset',
     'offset',
     'travel',
-    'art', 'hidden', 'inBackground',
+    'art', 'flip', 'hidden', 'inBackground',
 ];
 
 /// 가로지르기. 함정 안에 덩이 하나로 들어간다.
 const TRAVEL_FIELDS = ['dx', 'dy', 'duration', 'gap', 'offset', 'loop'];
 
-const PROP_FIELDS = ['name', 'x', 'y', 'w', 'h'];
-const BOX_FIELDS = ['x', 'y', 'w', 'h', 'art'];
+const PROP_FIELDS = ['name', 'x', 'y', 'w', 'h', 'flip'];
+const BOX_FIELDS = ['x', 'y', 'w', 'h', 'art', 'inBackground'];
 
 /// 소수점이 꼬리를 물지 않게 자른다. 화면에서 끌어다 놓으면
 /// 480.00000000001 같은 것이 나오는데, 그게 파일에 남으면 읽을 수가 없다.

@@ -269,6 +269,17 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
         }
     }
 
+    /// 체크박스 한 줄. 같은 모양을 여러 번 쓰게 되어 한 곳으로 모았다.
+    function toggleRow(label, help, checked, onChange) {
+        const row = document.createElement('div');
+        row.className = 'field';
+        row.innerHTML = `<label>${label}</label>
+            <input type="checkbox" ${checked ? 'checked' : ''}>
+            <span class="help">${help}</span>`;
+        row.querySelector('input').addEventListener('change', e => onChange(e.target.checked));
+        return row;
+    }
+
     /// 가로지르기 칸. 켜면 함정이 제 자리에서 한 방향으로 흘러가 화면 밖으로
     /// 사라지고, 잠시 뒤 처음 자리에서 다시 나온다.
     ///
@@ -307,15 +318,34 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
             box.appendChild(row);
         }
 
-        const loop = document.createElement('div');
-        loop.className = 'field';
-        loop.innerHTML = `<label>반복</label>
-            <input type="checkbox" id="t-loop" ${item.travel.loop ? 'checked' : ''}>
-            <span class="help">끄면 한 번 지나가고 다시 안 나온다</span>`;
-        loop.querySelector('input').addEventListener('change', e => {
-            item.travel.loop = e.target.checked;
-        });
-        box.appendChild(loop);
+        // 방향. dx의 부호가 방향이고, 그림도 같이 뒤집어야 뒤로 달리지 않는다.
+        // 숫자에 마이너스를 붙이는 것보다 단추 두 개가 무엇을 하는지 분명하다.
+        const way = document.createElement('div');
+        way.className = 'field';
+        way.innerHTML = '<label>방향</label>';
+
+        for (const [text, sign] of [['← 왼쪽', -1], ['오른쪽 →', 1]]) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = text;
+            button.style.marginRight = '4px';
+            // 켜진 단추는 dx의 부호를 그대로 따른다. 0이면 어느 쪽도 안 켠다.
+            if (Math.sign(item.travel.dx) === sign) button.classList.add('go');
+
+            button.addEventListener('click', () => {
+                // dx가 0이면 방향만 정해도 아무 데도 안 간다. 기본 거리를 준다 —
+                // 단추를 눌렀는데 아무 일도 안 일어나면 고장으로 보인다.
+                const far = Math.abs(item.travel.dx) || Math.abs(DEFAULT_TRAVEL.dx);
+                item.travel.dx = far * sign;
+                if (sign < 0) item.flip = true; else delete item.flip;
+                drawInspector();
+            });
+            way.appendChild(button);
+        }
+        box.appendChild(way);
+
+        box.appendChild(toggleRow('반복', '끄면 한 번 지나가고 다시 안 나온다',
+            item.travel.loop, on => { item.travel.loop = on; }));
 
         return box;
     }
@@ -361,26 +391,32 @@ export function createEditor({ canvas, game, rooms, toGameCoords, goToRoom }) {
                 : ['x', 'y', 'w', 'h'];
         for (const key of fields) inspector.appendChild(numberField(item, key));
 
-        if (selection.what === 'hazard') {
-            const toggles = document.createElement('div');
-            toggles.className = 'field';
-            toggles.innerHTML = `<label>안 보이게</label>
-                <input type="checkbox" id="f-hidden" ${item.hidden ? 'checked' : ''}>
-                <span class="help">판정만 두고 안 그린다. <b>마지막 방에만</b> — 검사가 본다</span>`;
-            toggles.querySelector('input').addEventListener('change', e => {
-                if (e.target.checked) item.hidden = true; else delete item.hidden;
-            });
-            inspector.appendChild(toggles);
+        // 출구도 배경에 맡길 수 있다. 배경이 이미 문을 그리고 있으면
+        // 문 그림을 한 장 더 얹을 이유가 없다.
+        if (selection.what === 'exit') {
+            inspector.appendChild(toggleRow('배경에 있음',
+                '배경 그림이 이미 문을 보여준다. 판정만 두고 안 그린다',
+                item.inBackground,
+                on => { if (on) item.inBackground = true; else delete item.inBackground; }));
+        }
 
-            const bg = document.createElement('div');
-            bg.className = 'field';
-            bg.innerHTML = `<label>배경에 있음</label>
-                <input type="checkbox" id="f-inbg" ${item.inBackground ? 'checked' : ''}>
-                <span class="help">배경 그림이 이미 보여주는 것. 판정만 두고 안 그린다</span>`;
-            bg.querySelector('input').addEventListener('change', e => {
-                if (e.target.checked) item.inBackground = true; else delete item.inBackground;
-            });
-            inspector.appendChild(bg);
+        if (selection.what === 'prop' || selection.what === 'hazard') {
+            inspector.appendChild(toggleRow('좌우 뒤집기',
+                '그림만 뒤집는다. 왼쪽으로 가는 차는 이걸 켜야 뒤로 안 달린다',
+                item.flip,
+                on => { if (on) item.flip = true; else delete item.flip; }));
+        }
+
+        if (selection.what === 'hazard') {
+            inspector.appendChild(toggleRow('안 보이게',
+                '판정만 두고 안 그린다. <b>마지막 방에만</b> — 검사가 본다',
+                item.hidden,
+                on => { if (on) item.hidden = true; else delete item.hidden; }));
+
+            inspector.appendChild(toggleRow('배경에 있음',
+                '배경 그림이 이미 보여주는 것. 판정만 두고 안 그린다',
+                item.inBackground,
+                on => { if (on) item.inBackground = true; else delete item.inBackground; }));
 
             inspector.appendChild(travelBox(item));
 

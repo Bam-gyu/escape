@@ -38,19 +38,135 @@ test('시작하자마자 깨지는 방은 없다', () => {
     }
 });
 
+/// 출구에 닿으면서 안 죽는 자리가 있는가. 있으면 그 자리와 시각, 없으면 null.
+///
+/// <b>출구 전체를 훑는다.</b> 예전에는 한가운데만 찍어봤는데, 문을 벽에 걸쳐
+/// 놓으면 — 문틀 위쪽이 벽에 묻히게 놓는 것은 자연스럽다 — 한가운데가 늘 벽
+/// 안이라 "못 깨는 방"이라고 우겼다. 실제로는 문 아래쪽으로 들어갈 수 있었다.
+/// 검사가 멀쩡한 방을 막으면 방 짜는 사람이 검사를 안 믿게 된다.
+function wayIntoExit(room) {
+    const e = room.exit;
+
+    // 닿기만 하면 통과다. 그래서 <b>서 있을 수 있는 자리는 출구보다 반지름만큼
+    // 넓다.</b> 출구 안쪽만 훑으면 문틀에 살짝 걸치는 자리를 못 봐서,
+    // 깰 수 있는 방을 못 깬다고 우긴다.
+    const left = Math.max(PLAYER_RADIUS, e.x - PLAYER_RADIUS);
+    const right = Math.min(ROOM_WIDTH - PLAYER_RADIUS, e.x + e.w + PLAYER_RADIUS);
+    const top = Math.max(PLAYER_RADIUS, e.y - PLAYER_RADIUS);
+    const bottom = Math.min(ROOM_HEIGHT - PLAYER_RADIUS, e.y + e.h + PLAYER_RADIUS);
+
+    // 훑을 점 수에 상한을 둔다. 출구를 화면만 하게 늘려놓고 막아버리면
+    // 900프레임 × 넓이가 되어 저장이 안 끝난다 — 편집기에서 숫자를 아무렇게나
+    // 넣을 수 있으니 실제로 일어난다. 촘촘함보다 끝나는 것이 먼저다.
+    //
+    // <b>격자보다 좁은 틈은 못 본다.</b> 2px보다 좁은 길만 남은 방은 "못 깬다"고
+    // 나온다. 사람 손으로 통과할 수 있는 틈이 아니므로 그걸로 친다.
+    const FINEST = 2;
+    const BUDGET = 2400;
+    const points = ((right - left) / FINEST + 1) * ((bottom - top) / FINEST + 1);
+    const step = Math.max(FINEST, FINEST * Math.sqrt(Math.max(1, points) / BUDGET));
+
+    // <b>끝점을 반드시 넣는다.</b> 성긴 격자가 오른쪽·아래 끝을 건너뛰면,
+    // 벽에 밀려 가장자리에만 남은 안전한 띠를 통째로 못 본다.
+    const along = (from, to) => {
+        const out = [];
+        for (let v = from; v < to; v += step) out.push(v);
+        out.push(to);
+        return out;
+    };
+    const xs = along(left, right);
+    const ys = along(top, bottom);
+
+    for (const t of everyFrame()) {
+        for (const x of xs) {
+            for (const y of ys) {
+                const state = stepRoom(room, x, y, t);
+                if (state.cleared && !state.dead) return { t: +t.toFixed(2), x, y };
+            }
+        }
+    }
+    return null;
+}
+
 test('출구에 설 수 있는 순간이 있다', () => {
     // 출구가 함정에 영영 덮여 있으면 깰 수 없는 방이다.
     for (const room of ROOMS) {
-        const cx = room.exit.x + room.exit.w / 2;
-        const cy = room.exit.y + room.exit.h / 2;
-
-        const openMoment = [...everyFrame()].find(t => {
-            const state = stepRoom(room, cx, cy, t);
-            return state.cleared && !state.dead;
-        });
-
-        assert.notEqual(openMoment, undefined, `${room.name}: 출구가 늘 막혀 있다`);
+        assert.notEqual(wayIntoExit(room), null,
+            `${room.name}: 출구 어디에도, 15초 어느 때에도 설 수가 없다 — 못 깨는 방이다`);
     }
+});
+
+test('출구가 벽에 걸쳐 있어도 아래로 들어갈 수 있으면 괜찮다', () => {
+    // 이걸 막으면 문을 벽에 붙여 놓는 자연스러운 배치를 못 하게 된다.
+    const room = {
+        name: '검사용',
+        spawn: { x: 480, y: 650 },
+        exit: { x: 449, y: 64, w: 60, h: 105 },
+        hazards: [{ kind: 'rect', x: 0, y: -25, w: 960, h: 159 }],
+        props: [],
+    };
+
+    const way = wayIntoExit(room);
+    assert.notEqual(way, null, '문 아래쪽으로 들어갈 수 있어야 한다');
+    assert.ok(way.y > 134, '벽 아래에서 닿아야 한다');
+});
+
+test('출구 바로 바깥에 서서 닿는 것도 찾아낸다', () => {
+    // 출구 안쪽에는 못 서지만 문턱 아래에 붙어 서면 닿는 방. 닿기만 하면 통과다.
+    const room = {
+        name: '문턱',
+        spawn: { x: 480, y: 650 },
+        exit: { x: 100, y: 100, w: 60, h: 60 },
+        hazards: [{ kind: 'rect', x: 0, y: 0, w: 960, h: 158 }],
+        props: [],
+    };
+
+    const way = wayIntoExit(room);
+    assert.notEqual(way, null, '출구 밖에 서서 닿는 자리를 놓쳤다');
+    assert.ok(way.y > 160, '벽 아래에 서야 한다');
+});
+
+test('커다란 출구에서 가장자리에만 길이 남아도 찾아낸다', () => {
+    // 성긴 격자가 끝을 건너뛰면 깰 수 있는 방을 못 깬다고 우긴다.
+    const room = {
+        name: '가장자리',
+        spawn: { x: 480, y: 650 },
+        exit: { x: 0, y: 0, w: 960, h: 720 },
+        hazards: [{ kind: 'rect', x: -50, y: -50, w: 995, h: 900 }],
+        props: [],
+    };
+
+    const way = wayIntoExit(room);
+    assert.notEqual(way, null, '오른쪽 끝에 남은 띠를 놓쳤다');
+    assert.ok(way.x > 945, `오른쪽 끝에서 찾아야 하는데 x=${way?.x}`);
+});
+
+test('출구가 화면만 해도 검사가 끝난다', () => {
+    // 편집기에서 숫자를 아무렇게나 넣을 수 있다. 저장이 안 끝나면 안 된다.
+    const room = {
+        name: '커다란 문',
+        spawn: { x: 480, y: 650 },
+        exit: { x: 0, y: 0, w: 960, h: 720 },
+        hazards: [{ kind: 'rect', x: -50, y: -50, w: 1100, h: 900 }],
+        props: [],
+    };
+
+    const began = Date.now();
+    assert.equal(wayIntoExit(room), null);
+    assert.ok(Date.now() - began < 3000, `너무 오래 걸린다 (${Date.now() - began}ms)`);
+});
+
+test('출구가 통째로 덮여 있으면 잡아낸다', () => {
+    // 느슨해진 김에 진짜 못 깨는 방도 여전히 잡는지 본다.
+    const room = {
+        name: '막힌 방',
+        spawn: { x: 480, y: 650 },
+        exit: { x: 449, y: 64, w: 60, h: 105 },
+        hazards: [{ kind: 'rect', x: 400, y: 0, w: 200, h: 300 }],
+        props: [],
+    };
+
+    assert.equal(wayIntoExit(room), null);
 });
 
 test('방 밖으로는 못 나간다', () => {

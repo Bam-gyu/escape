@@ -180,6 +180,7 @@ export function changeKind(item, kind) {
         next.y = Math.round(center.y - next.h / 2);
     }
 
+    if (item.flip) next.flip = true;
     if (item.hidden) next.hidden = true;
     if (item.inBackground) next.inBackground = true;
 

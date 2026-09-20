@@ -6,9 +6,22 @@ const toRad = degrees => degrees * Math.PI / 180;
 
 /// 그림이 있으면 그림을, 없으면 도형을 그린다.
 /// 이 갈림이 여기 한 곳에만 있어서 그림이 생겨도 게임 쪽은 안 바뀐다.
-function drawArtOrShape(ctx, art, images, box, fallback) {
+/// flip이 참이면 <b>상자 안에서 좌우로 뒤집어</b> 그린다.
+///
+/// 왼쪽으로 가는 차는 그림도 왼쪽을 봐야 한다. 안 그러면 뒤로 달린다.
+/// 상자 한가운데를 축으로 뒤집으므로 판정은 그대로다 — 게임은 뒤집힌 줄도 모른다.
+function drawArtOrShape(ctx, art, images, box, fallback, flip = false) {
     const image = art && images[art];
     if (!image) { fallback(); return; }
+
+    if (flip) {
+        ctx.save();
+        ctx.translate(box.x * 2 + box.w, 0);
+        ctx.scale(-1, 1);
+        drawArtOrShape(ctx, art, images, box, fallback, false);
+        ctx.restore();
+        return;
+    }
 
     const spec = ART[art];
 
@@ -74,11 +87,16 @@ function drawProps(ctx, room, images) {
         drawArtOrShape(ctx, prop.name, images, prop, () => {
             ctx.fillStyle = COLOR.prop;
             ctx.fillRect(prop.x, prop.y, prop.w, prop.h);
-        });
+        }, prop.flip === true);
     }
 }
 
 function drawExit(ctx, room, images) {
+    // 배경 그림에 이미 문이 그려져 있으면 덧그리지 않는다. 판정은 그대로다 —
+    // 함정의 inBackground와 같은 뜻이고, 같은 이유다. 배경이 보여주고 있는 것에
+    // 문 그림을 한 장 더 얹으면 두 개로 보이거나 어긋나 보인다.
+    if (room.exit.inBackground) return;
+
     // 방이 exit.art로 골라 쓸 수 있다. 골목의 옆문은 세로로 길어서
     // 가로로 넓은 문 그림을 늘여 붙이면 찌그러진다.
     drawArtOrShape(ctx, room.exit.art ?? 'exit', images, room.exit, () => {
@@ -118,7 +136,7 @@ function drawCone(ctx, shape, images) {
         ctx.fill();
         ctx.fillStyle = COLOR[`${who}Cap`];
         ctx.fillRect(body.x + 4, body.y, body.w - 8, 12);
-    });
+    }, shape.of.flip === true);
 }
 
 /// 돌아가는 막대. 판정이 기울어진 사각형이므로 그림도 같은 각도로 돌려 그린다.
@@ -137,7 +155,7 @@ function drawSpinner(ctx, shape, images) {
         for (let x = box.x; x < box.x + box.w; x += 44) {
             ctx.fillRect(x, box.y, 22, box.h);
         }
-    });
+    }, shape.of.flip === true);
 
     ctx.restore();
 
@@ -197,7 +215,7 @@ function drawHazard(ctx, shape, images, revealed) {
                     : art === 'rail' ? COLOR.rail
                         : COLOR.wall;
         ctx.fillRect(shape.x, shape.y, shape.w, shape.h);
-    });
+    }, shape.of.flip === true);
 
     if (isHidden) markRevealed(ctx, shape);
 }

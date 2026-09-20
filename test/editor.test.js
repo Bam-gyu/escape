@@ -328,3 +328,23 @@ test('두 서랍이 같은 그림을 갖되 하는 일이 다르다', async () =
     assert.ok(propDrawer.arts.includes('sofa'), '소품 서랍에서 빠졌다');
     for (const d of DRAWERS) assert.ok(d.as, `'${d.title}' 서랍에 as가 없다`);
 });
+
+// ── 방향과 뒤집기 ─────────────────────────────────────────────
+
+test('좌우 뒤집기는 종류를 바꿔도 남는다', () => {
+    const car = { ...makeItem('car', 400, 300), flip: true };
+    for (const kind of ['blink', 'mover', 'spinner', 'cone']) {
+        assert.equal(changeKind(car, kind).flip, true, `${kind}으로 바꾸니 뒤집기가 사라졌다`);
+    }
+});
+
+test('뒤집기는 판정을 안 건드린다', async () => {
+    // 그림만 뒤집는 것이다. 게임은 뒤집힌 줄도 몰라야 한다.
+    const { shapeAt } = await import('../src/rules/hazards.js');
+    const plain = { kind: 'rect', x: 10, y: 20, w: 30, h: 40 };
+    const flipped = { ...plain, flip: true };
+
+    const a = shapeAt(plain, 1.5);
+    const b = shapeAt(flipped, 1.5);
+    assert.deepEqual([a.x, a.y, a.w, a.h], [b.x, b.y, b.w, b.h]);
+});
