@@ -1,11 +1,11 @@
 // 소리도 그림과 같다. 파일을 갈아끼우면 바뀌고, 없으면 조용할 뿐 안 멈춘다.
 
+/// 효과음. <b>버튼 소리 둘뿐이다.</b>
+/// 들킬 때·구역을 지날 때·도착할 때 소리는 안 쓰기로 했다 —
+/// 파일을 되살려 두면 지운 것이 계속 돌아온다.
 export const SOUNDS = {
     click: 'audio/click.mp3',
     hover: 'audio/title-select.mp3',
-    death: 'audio/death.mp3',
-    clear: 'audio/clear.mp3',
-    win: 'audio/win.mp3',
 };
 
 /// 배경음 두 벌. <b>게임 밖과 게임 안이다.</b>

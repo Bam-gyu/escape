@@ -291,16 +291,13 @@ function update(now) {
         // 나를 들키게 한 것이 안 보이는 함정이었다면, 이제부터 보인다.
         if (room().hazards[state.killedBy]?.hidden) game.revealed.add(state.killedBy);
 
-        audio.play('death');
         return;
     }
 
     if (state.cleared) {
         if (game.roomIndex + 1 < ROOMS.length) {
-            audio.play('clear');
             enterRoom(game.roomIndex + 1);
         } else {
-            audio.play('win');
             game.screen = 'ending';
         }
     }

@@ -31,11 +31,22 @@ test('파일 이름이 전부 소문자다', () => {
 // 목록을 따로 적어두고 견주면 헛돈다. main.js가 실제로 부르는 이름을 읽는다.
 
 test('main.js가 부르는 효과음이 다 있다', () => {
-    const called = [...MAIN.matchAll(/audio\.play\('([^']+)'\)/g)].map(m => m[1]);
-    assert.ok(called.length >= 4, `부르는 데를 못 찾았다 (${called.length}개)`);
+    const called = new Set([...MAIN.matchAll(/audio\.play\('([^']+)'\)/g)].map(m => m[1]));
+    assert.ok(called.size > 0, '부르는 데를 못 찾았다');
 
-    for (const name of new Set(called)) {
+    for (const name of called) {
         assert.ok(SOUNDS[name], `main.js가 없는 소리 '${name}'을 부른다`);
+    }
+
+    // 버튼 소리 둘은 반드시 있어야 한다. 누른 느낌이 이 둘에서 온다.
+    assert.ok(called.has('click'), '버튼 누르는 소리를 안 부른다');
+    assert.ok(called.has('hover'), '버튼에 닿는 소리를 안 부른다');
+});
+
+test('안 쓰기로 한 소리는 목록에도 없다', () => {
+    // 목록에 남겨두면 파일이 없어도 조용히 지나가서, 지웠는지 잊었는지 알 수 없다.
+    for (const name of ['death', 'clear', 'win']) {
+        assert.equal(SOUNDS[name], undefined, `${name}이 아직 목록에 있다`);
     }
 });
 
