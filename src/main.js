@@ -371,6 +371,10 @@ function drawHud() {
     const ink = '#f3eee6';
     label(`${game.roomIndex + 1} / ${ROOMS.length}  ${room().name}`, 20, 46, 34, 'left', ink);
     label(`들킨 횟수 ${game.deaths}`, ROOM_WIDTH - 20, 46, 34, 'right', ink);
+
+    // 소리가 꺼져 있으면 그렇다고 말한다. M을 눌렀는지, ?mute=1로 들어왔는지
+    // <b>화면에 표가 안 나면 소리가 고장 난 줄 안다.</b> 실제로 그렇게 헤맸다.
+    if (audio.muted) label('소리 꺼짐 — M', 20, 84, 26, 'left', '#9fb0c8');
 }
 
 function drawVeil(alpha) {
