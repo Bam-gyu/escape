@@ -59,6 +59,9 @@ async function serveFile(res, urlPath) {
         const body = await readFile(path);
         send(res, 200, body, TYPES[extname(path)] ?? 'application/octet-stream');
     } catch {
+        // <b>못 찾은 것은 여기에 적는다.</b> 브라우저 콘솔은 "404"라고만 하고
+        // 어느 주소인지 접어두는 때가 있어서, 무엇이 없는지 알 수가 없다.
+        console.log(`404  ${urlPath}`);
         send(res, 404, '없다', 'text/plain; charset=utf-8');
     }
 }
