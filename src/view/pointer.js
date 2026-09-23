@@ -31,3 +31,12 @@ export function movedPointer(pointer, delta, room) {
         y: clamp(pointer.y + delta.y, 0, room.height),
     };
 }
+
+/// 손가락을 from에서 to로 끌었을 때의 새 자리.
+///
+/// <b>짚은 자리로 옮기지 않는다.</b> 끈 만큼만 간다. 터치를 트랙패드처럼 쓰는
+/// 것이라, 화면 아무 데나 끌어도 되고 손가락이 주인공을 가리지 않는다.
+/// 짚은 자리로 옮기면 함정을 뛰어넘는 꼼수가 되고, 반대로 즉사도 한다.
+export function draggedPointer(pointer, from, to, box, room) {
+    return movedPointer(pointer, toRoomDelta({ x: to.x - from.x, y: to.y - from.y }, box, room), room);
+}

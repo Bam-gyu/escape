@@ -93,6 +93,19 @@ const game = {
     /// 다음 마우스 움직임에 주인공이 그 옛 자리로 순간이동한다.
     pointerFresh: true,
 
+    /// 마지막 손길이 터치였는가. <b>터치 기기에서는 마우스를 붙잡으면 안 된다.</b>
+    /// 붙잡으면 "움직인 거리"만 오는데 터치에는 그런 것이 없어서 조작이 통째로 막힌다.
+    touching: false,
+
+    /// 지금 끌고 있는 손가락의 번호와 마지막 자리.
+    ///
+    /// <b>터치는 트랙패드처럼 쓴다.</b> 짚은 자리로 주인공이 옮겨가는 것이 아니라,
+    /// 화면 아무 데나 끌면 그 움직인 만큼 간다. 이유가 둘이다 —
+    /// 손가락이 주인공을 가리지 않고, 손을 뗐다 다시 짚어도 주인공이 안 튄다.
+    /// 짚은 자리로 옮기면 함정을 뛰어넘는 꼼수가 되고, 반대로 즉사도 한다.
+    touchId: null,
+    touchFrom: null,
+
     /// 주인공을 그리는가. 방을 짤 때만 끈다.
     /// 주인공이 함정 위에 겹쳐 서 있으면 그 함정이 어떻게 생겼는지 볼 수가 없는데,
     /// 커서를 따라다니는 게임이라 <b>손을 치울 수가 없다.</b>
@@ -129,9 +142,9 @@ function enterRoom(index) {
     // 이게 없으면 앞 방에서 커서가 있던 자리에 주인공이 튀어나와 그대로 죽는다.
     game.readyAt = { ...ROOMS[index].spawn };
     game.readyT = 0;
-    game.pointerFresh = !game.locked;
+    game.pointerFresh = !holdsPosition();
 
-    if (game.locked) {
+    if (holdsPosition()) {
         game.pointer = { ...game.readyAt };
         game.screen = 'play';
     } else {
@@ -169,6 +182,75 @@ function toGameCoords(event) {
 
 const ROOM = { width: ROOM_WIDTH, height: ROOM_HEIGHT };
 
+/// 주인공 자리를 <b>게임이 들고 있는가.</b>
+///
+/// 마우스를 붙잡았거나 터치일 때가 그렇다. 둘 다 "움직인 거리"만 받는다.
+/// 그러면 방을 넘어갈 때 시작 자리에 세워놓고 곧바로 조작할 수 있다.
+/// 커서를 그대로 따라가는 것(붙잡기 전 마우스)만 예외다.
+const holdsPosition = () => game.locked || game.touching;
+
+/// 끌고 있는 손가락을 찾는다. 번호로 집는 것이 중요하다 —
+/// 두 번째 손가락이 내려앉을 때 아무거나 집으면 주인공이 그만큼 튄다.
+function trackedTouch(event) {
+    if (game.touchId === null) return null;
+    for (const list of [event.changedTouches, event.touches]) {
+        for (const touch of list ?? []) if (touch.identifier === game.touchId) return touch;
+    }
+    return null;
+}
+
+function onTouchStart(event) {
+    game.touching = true;
+
+    // 터치로 들어왔으면 키 안내는 쓸모가 없다. 한 번만 지운다.
+    document.getElementById('keys')?.remove();
+    if (game.touchId !== null) return;          // 이미 하나를 끌고 있다
+
+    const touch = event.changedTouches[0];
+    game.touchId = touch.identifier;
+    game.touchFrom = { x: touch.clientX, y: touch.clientY };
+    event.preventDefault();
+
+    // 기다리는 중이었으면 짚는 것만으로 시작한다. <b>시작 자리를 정확히
+    // 짚으라고 하면 안 된다</b> — 그 자리가 손가락에 가려 안 보인다.
+    if (game.screen === 'ready') { game.pointer = { ...game.readyAt }; resumePlay(); return; }
+
+    // 들킴·엔딩 화면도 짚어서 넘긴다. 터치에서는 click이 안 만들어진다.
+    advanceScreen();
+}
+
+function onTouchMove(event) {
+    const touch = trackedTouch(event);
+    if (!touch) return;
+    event.preventDefault();
+
+    // <b>끈 만큼만</b> 움직인다. 짚은 자리로 옮기지 않는다.
+    const delta = toRoomDelta(
+        { x: touch.clientX - game.touchFrom.x, y: touch.clientY - game.touchFrom.y },
+        canvas.getBoundingClientRect(), ROOM);
+    game.touchFrom = { x: touch.clientX, y: touch.clientY };
+    game.pointer = movedPointer(game.pointer, delta, ROOM);
+}
+
+function onTouchEnd(event) {
+    // <b>끝난 손가락은 changedTouches에만 있다.</b> touches까지 뒤지면
+    // 두 번째 손가락을 뗐을 뿐인데 끌고 있던 첫 손가락을 놓아버린다.
+    const ended = [...event.changedTouches].some(t => t.identifier === game.touchId);
+    if (!ended) return;
+
+    // 아직 남은 손가락이 있으면 그것으로 이어 끈다. 자리는 그대로 두고
+    // 기준점만 그 손가락으로 옮긴다 — 안 그러면 손가락을 바꿀 때 주인공이 튄다.
+    const next = event.touches[0];
+    if (next) {
+        game.touchId = next.identifier;
+        game.touchFrom = { x: next.clientX, y: next.clientY };
+        return;
+    }
+
+    game.touchId = null;
+    game.touchFrom = null;
+}
+
 function onPointerMove(event) {
     if (game.locked) {
         // 잠긴 동안 들어온 터치는 버린다. 절대 좌표를 그대로 쓰면
@@ -183,15 +265,26 @@ function onPointerMove(event) {
         return;
     }
 
+    // 진짜 마우스가 움직였다. <b>터치를 쓰다가 마우스로 바꾼 것이다.</b>
+    //
+    // 아이패드+트랙패드나 터치 노트북에서 일어난다. 그냥 넘기면 안 된다 —
+    // 터치인 줄 알고 시작 자리에 세워둔 주인공이 다음 마우스 움직임에
+    // 커서 자리로 튀어, 함정을 건너뛰거나 그대로 죽는다.
+    // 잠금이 풀렸을 때와 같은 길로 보낸다: 그 자리에서 멈추고 커서를 기다린다.
+    if (game.touching) {
+        game.touching = false;
+        if (game.screen === 'play') holdHere();
+    }
+
     game.pointer = toGameCoords(event);
     game.pointerFresh = true;
-    if (event.touches) event.preventDefault();
 }
 
 /// 마우스를 붙잡아 달라고 부탁한다. 거절당해도 조용히 넘어간다 —
 /// 그때는 예전 방식(커서 자리를 그대로 쓰기)으로 그냥 돌아간다.
 function grabMouse() {
-    if (game.admin || game.locked) return;
+    // 터치 기기에서 붙잡으면 조작이 통째로 막힌다.
+    if (game.admin || game.locked || game.touching) return;
     try {
         const asked = canvas.requestPointerLock?.();
         if (asked?.catch) asked.catch(() => { });
@@ -236,8 +329,14 @@ document.addEventListener('pointerlockchange', () => {
 document.addEventListener('pointerlockerror', () => { game.locked = false; });
 
 canvas.addEventListener('mousemove', onPointerMove);
-canvas.addEventListener('touchmove', onPointerMove, { passive: false });
-canvas.addEventListener('touchstart', onPointerMove, { passive: false });
+canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+canvas.addEventListener('touchend', onTouchEnd);
+canvas.addEventListener('touchcancel', onTouchEnd);
+
+// 버튼을 눌러 들어와도 터치인 줄 알아야 한다. 모르면 마우스를 붙잡으려 들고,
+// 붙잡히면 터치에는 움직인 거리가 안 와서 조작이 통째로 막힌다.
+addEventListener('touchstart', () => { game.touching = true; }, { passive: true, capture: true });
 
 canvas.addEventListener('click', () => {
     // 판정 보기(H) 중에는 누른 자리를 콘솔에 남긴다. rooms.js에 그대로 붙여넣으면 된다.
@@ -247,6 +346,15 @@ canvas.addEventListener('click', () => {
         console.log(`x: ${x}, y: ${y}`);
     }
 
+    advanceScreen();
+});
+
+/// "아무데나 눌러서 다시" 같은 것들. <b>클릭과 터치가 같은 길을 쓴다.</b>
+///
+/// 터치에서는 캔버스가 preventDefault를 부르므로 click이 안 만들어진다.
+/// 클릭에만 적어두면 모바일에서 들킨 뒤 다시 시작을 못 한다 —
+/// 이 게임은 계속 죽으니 그대로 갇힌다.
+function advanceScreen() {
     if (game.screen === 'opening') { showIntro(); return; }
 
     // 기다리는 중에 누르면 마우스를 붙잡아 본다. 붙잡히면 곧바로 이어진다.
@@ -254,9 +362,8 @@ canvas.addEventListener('click', () => {
     if (game.screen === 'ready') { grabMouse(); return; }
     if (game.screen === 'dead') { grabMouse(); restartRoom(); return; }
 
-    if (game.screen === 'ending') { game.deaths = 0; showTitle(); return; }
-    if (game.screen === 'clear') { game.deaths = 0; showTitle(); }
-});
+    if (game.screen === 'ending' || game.screen === 'clear') { game.deaths = 0; showTitle(); }
+}
 
 addEventListener('keydown', event => {
     if (event.target instanceof HTMLInputElement) return;

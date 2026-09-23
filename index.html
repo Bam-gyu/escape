@@ -14,13 +14,26 @@
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
     body {
-        margin: 0; min-height: 100vh; background: #0d1016;
+        margin: 0; min-height: 100dvh; background: #0d1016;
         display: flex; align-items: center; justify-content: center;
         font-family: "Nanum Pen Script", system-ui, sans-serif;
         overflow: hidden;
+
+        /* 손가락으로 끌 때 화면이 같이 딸려가거나 새로고침되면 안 된다. */
+        overscroll-behavior: none;
+        -webkit-user-select: none; user-select: none;
+        -webkit-tap-highlight-color: transparent;
     }
-    #stage { position: relative; width: min(100vw, 133.333vh); aspect-ratio: 4 / 3; }
-    #screen { width: 100%; height: 100%; display: block; cursor: none; background: #2f3646; }
+    /* 100dvh는 폰의 주소창이 접혔다 펴져도 화면이 안 흔들리게 한다.
+       100vh는 주소창이 있을 때의 높이라, 스크롤될 때마다 게임이 위아래로 튄다. */
+    #stage { position: relative; width: min(100vw, 133.333dvh); aspect-ratio: 4 / 3; }
+    #screen {
+        width: 100%; height: 100%; display: block; cursor: none; background: #2f3646;
+
+        /* 캔버스 위의 손가락은 전부 게임 것이다. 이게 없으면 끄는 동안
+           브라우저가 화면을 확대하거나 밀어버린다. */
+        touch-action: none;
+    }
 
     /* 타이틀과 연출. 캔버스 위에 덮는다. */
     .overlay {
@@ -54,6 +67,17 @@
     #go {
         position: absolute; transform: translate(-50%, -50%) rotate(-2deg);
         white-space: nowrap;
+    }
+
+    /* 세로로 들면 화면이 손톱만 해진다. 돌려달라고만 한다 —
+       억지로 돌리는 것은 브라우저가 막아둔 지 오래다. */
+    #turn { display: none; }
+    @media (orientation: portrait) and (pointer: coarse) {
+        #turn {
+            display: flex; position: fixed; inset: 0; z-index: 30;
+            align-items: center; justify-content: center; text-align: center;
+            background: #0d1016; color: #9fb0c8; font-size: 34px; line-height: 1.7;
+        }
     }
 
     #keys {
@@ -93,6 +117,11 @@
         </div>
         <button type="button" id="go">문을 연다</button>
     </div>
+
+    <div id="turn">
+    가로로 돌려주세요<br>
+    <span style="font-size:24px;color:#6b7382">화면을 끌면 주인공이 그만큼 움직입니다</span>
+</div>
 
     <div id="keys">H 방 편집기 · M 소리 끄기 · Esc 마우스 놓기</div>
 </div>
