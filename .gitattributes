@@ -1,0 +1,3 @@
+# GitHub Pages는 그대로 올린 파일을 내보낸다. 언어 통계에서 에셋은 뺀다.
+art/** linguist-vendored
+audio/** linguist-vendored
