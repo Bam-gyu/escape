@@ -6,6 +6,7 @@
   "description": "감옥탈출류 마우스 피하기 팬 게임",
   "scripts": {
     "test": "node --test",
-    "start": "node tools/serve.js"
+    "start": "node tools/serve.js",
+    "build": "node tools/build.js"
   }
 }

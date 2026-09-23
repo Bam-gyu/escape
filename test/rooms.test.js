@@ -260,18 +260,13 @@ test('방이 여섯 개다', () => {
     assert.equal(ROOMS.length, 6);
 });
 
-test('안 보이는 함정은 마지막 방에만 있다', () => {
-    // 배울 것을 다 배운 뒤라야 농담이 된다. 앞 방에 숨겨두면
-    // 아직 규칙도 모르는 사람이 보이지 않는 것에 당한다.
-    ROOMS.forEach((room, index) => {
-        const hidden = room.hazards.filter(h => h.hidden);
-        if (index === ROOMS.length - 1) return;
-        assert.equal(hidden.length, 0, `${room.name}: 마지막 방이 아닌데 숨은 함정이 있다`);
-    });
-
-    const last = ROOMS[ROOMS.length - 1];
-    assert.ok(last.hazards.some(h => h.hidden), '마지막 방에 숨은 함정이 하나도 없다');
-});
+// 안 보이는 함정을 <b>어느 방에 몇 개 두는지는 안 본다.</b>
+// 마지막 방에만 두기로 한 것은 취향이고, 취향은 방 짜는 사람이 정한다.
+// 여기서 막는 것은 "들어서자마자 보이지 않는 것에 당한다" 하나뿐이다 —
+// 그건 자기가 뭘 잘못했는지 알 수 없는 죽음이라 어느 방에서든 나쁘다.
+//
+// 화면 밖 경계벽처럼 <b>보여줄 것이 없는</b> 판정에는 hidden 대신
+// inBackground를 쓴다. hidden은 부딪히면 빨갛게 드러나서 고장처럼 보인다.
 
 test('안 보이는 함정은 시작 자리에서 멀리 있다', () => {
     // 들어서자마자 보이지 않는 것에 당하면 뭘 잘못했는지 알 수 없다.
