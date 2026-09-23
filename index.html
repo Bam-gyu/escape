@@ -60,6 +60,13 @@
         position: absolute; left: 0; right: 0; bottom: -28px;
         text-align: center; font-size: 18px; color: #6b7382;
     }
+
+    /* 원작 표기. 이건 습작이고, 규칙과 장치를 가져온 곳이 있다.
+       문서에만 적어두면 게임을 하는 사람은 영영 모른다. */
+    #credit {
+        margin-top: 30px; font-size: 20px; line-height: 1.6; color: #6b7382;
+    }
+    #credit a { color: #9fb0c8; }
 </style>
 </head>
 <body>
@@ -70,6 +77,12 @@
         <h1>숙소탈출</h1>
         <h2>감시를 피해 편의점까지</h2>
         <button type="button" id="start">게임 시작</button>
+
+        <div id="credit">
+            마우스 피하기 규칙은 YunoGT의 「감옥탈출 리마스터」에서 가져온 습작입니다.<br>
+            설정 · 그림 · 소리 · 방 배치는 직접 만들었습니다.<br>
+            <a href="https://vidkidz.tistory.com/155" target="_blank" rel="noopener">원작 보러 가기</a>
+        </div>
     </div>
 
     <div class="overlay" id="intro" hidden>
