@@ -60,17 +60,23 @@ export function createAudio(muted) {
     // 한 번만 말한다. 막힌 채로 프레임마다 떠들면 콘솔이 못 쓰게 된다.
     let toldBlocked = false;
 
+    /// <b>브라우저가 막고 있는가.</b> 막혔으면 화면이 "눌러 달라"고 말해야 한다.
+    /// 이걸 안 내놓으면 타이틀 화면이 왜 조용한지 아무도 모른다.
+    let blocked = false;
+
     function start() {
         if (silent || !current) return;
 
-        tracks[current].play().then(() => { toldBlocked = false; }).catch(error => {
+        tracks[current].play().then(() => { toldBlocked = false; blocked = false; }).catch(error => {
             // <b>조용히 실패하면 고장인지 정책인지 알 수가 없다.</b>
             // 브라우저가 막은 것인지, 파일이 없는 것인지를 여기서 갈라 말해준다.
+            const byPolicy = error?.name === 'NotAllowedError';
+            blocked = byPolicy;
+
             if (toldBlocked) return;
             toldBlocked = true;
 
-            const blocked = error?.name === 'NotAllowedError';
-            console.warn(blocked
+            console.warn(byPolicy
                 ? `[소리] 브라우저가 막았다. 화면을 한 번 누르면 ${MUSIC[current]}가 난다.`
                 : `[소리] ${MUSIC[current]}를 못 틀었다 — ${error?.name ?? error}`);
         });
@@ -88,6 +94,9 @@ export function createAudio(muted) {
 
     return {
         get muted() { return silent; },
+
+        /// 브라우저가 소리를 막고 있는가. 막혔으면 타이틀이 문을 하나 띄운다.
+        get blocked() { return blocked; },
 
         play(name) {
             if (silent) return;

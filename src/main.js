@@ -749,7 +749,27 @@ function frame(now) {
     advanceWalk(now);
     update(now);
     draw();
-    requestAnimationFrame(frame);
+    /// 브라우저가 소리를 막고 있으면 타이틀 앞에 문을 하나 세운다.
+///
+/// <b>이 게임의 첫 클릭은 [게임 시작]인데, 그게 곧 타이틀을 떠나는 클릭이다.</b>
+/// 그래서 타이틀 음악이 제 화면에서 날 틈이 없었다. 떠나지 않는 클릭이 필요하다.
+/// 막혀 있지 않으면(이미 한 번 건드린 뒤, 돌아온 방문) 문은 아예 안 나온다.
+const gate = document.getElementById('gate');
+
+// 닫는 것은 <b>여는 것과 따로</b> 걸어둔다. 여는 함수 안에 넣어두면,
+// 다른 이유로 문이 떠 있을 때 닫을 방법이 없어진다.
+// 소리를 켜는 것은 audio.js의 손길 리스너가 한다. 문은 비켜주기만 한다.
+gate.addEventListener('pointerdown', () => { gate.hidden = true; });
+
+function openGate() {
+    if (!audio.blocked || game.screen !== 'title') return;
+    gate.hidden = false;
+}
+
+// 첫 재생 시도의 답을 기다렸다가 판단한다. 곧바로 물으면 아직 모른다.
+setTimeout(openGate, 400);
+
+requestAnimationFrame(frame);
 }
 
 requestAnimationFrame(frame);

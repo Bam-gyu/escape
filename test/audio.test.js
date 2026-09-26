@@ -88,7 +88,13 @@ function withFakeAudio(run, { blockUntilGesture = false } = {}) {
             made.push(this);
         }
         play() {
-            if (blocked) return Promise.reject(new Error('NotAllowedError'));
+            if (blocked) {
+                // 진짜 브라우저는 name이 'NotAllowedError'인 DOMException을 준다.
+                // 이름이 다르면 "정책에 막힌 것"과 "파일이 없는 것"을 못 가른다.
+                const error = new Error("play() failed because the user didn't interact first");
+                error.name = 'NotAllowedError';
+                return Promise.reject(error);
+            }
             this.playing = true; this.starts++;
             return Promise.resolve();
         }
@@ -98,6 +104,11 @@ function withFakeAudio(run, { blockUntilGesture = false } = {}) {
     // 이 가짜가 대신 덮어줘서, 검사가 지키는 척만 하게 된다. 실제로 그랬다.
     globalThis.addEventListener = (type, fn, options) => {
         listeners.push({ type, fn, once: options?.once === true });
+    };
+
+    const restore = () => {
+        globalThis.Audio = savedAudio;
+        globalThis.addEventListener = savedAdd;
     };
 
     try {
@@ -112,10 +123,16 @@ function withFakeAudio(run, { blockUntilGesture = false } = {}) {
                 l.fn({});
             }
         };
-        return run(audio, track, made, gesture);
-    } finally {
-        globalThis.Audio = savedAudio;
-        globalThis.addEventListener = savedAdd;
+
+        // 본문이 기다리는 것이면 끝날 때까지 흉내를 치우면 안 된다.
+        const result = run(audio, track, made, gesture);
+        if (result?.then) return result.finally(restore);
+
+        restore();
+        return result;
+    } catch (error) {
+        restore();
+        throw error;
     }
 }
 
@@ -207,4 +224,40 @@ test('음소거 중에는 사람이 눌러도 안 난다', () => {
         gesture('pointerdown');
         assert.equal(track('title').playing, false);
     }, { blockUntilGesture: true });
+});
+
+// ── 브라우저가 막고 있는지 알려준다 ───────────────────────────
+// 막혔으면 타이틀이 "화면을 눌러 시작" 문을 세운다. 이걸 못 내놓으면
+// 타이틀 화면이 왜 조용한지 아무도 모른 채로 지나간다.
+
+/// play()의 답은 약속(Promise)으로 온다. 바로 물으면 아직 안 왔다.
+const settled = () => new Promise(resolve => setTimeout(resolve, 0));
+
+test('막혀 있으면 막혔다고 말한다', async () => {
+    await withFakeAudio(async (audio) => {
+        audio.playMusic('title');
+        await settled();
+        assert.equal(audio.blocked, true);
+    }, { blockUntilGesture: true });
+});
+
+test('사람이 누른 뒤에는 안 막혔다고 한다', async () => {
+    await withFakeAudio(async (audio, _track, _made, gesture) => {
+        audio.playMusic('title');
+        await settled();
+        assert.equal(audio.blocked, true);
+
+        gesture('pointerdown');
+        await settled();
+        assert.equal(audio.blocked, false, '난 뒤에도 막혔다고 하면 문이 안 닫힌다');
+    }, { blockUntilGesture: true });
+});
+
+test('처음부터 날 수 있으면 아예 안 막혔다', async () => {
+    // 돌아온 방문이다. 문이 나오면 안 된다 — 쓸데없는 클릭이 하나 는다.
+    await withFakeAudio(async (audio) => {
+        audio.playMusic('title');
+        await settled();
+        assert.equal(audio.blocked, false);
+    });
 });
