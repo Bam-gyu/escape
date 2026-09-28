@@ -30,6 +30,7 @@ const TYPES = {
     '.svg': 'image/svg+xml',
     '.mp3': 'audio/mpeg',
     '.ico': 'image/x-icon',
+    '.webmanifest': 'application/manifest+json',
 };
 
 function send(res, status, body, type = 'application/json; charset=utf-8') {

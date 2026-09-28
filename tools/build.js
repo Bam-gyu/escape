@@ -20,7 +20,7 @@ const OUT = join(ROOT, 'dist');
 /// tools/ test/ docs/ 는 뺀다 — 게임이 안 쓴다.
 /// src/editor/는 넣는다. 37KB뿐이고, 빼면 localhost에서 dist를 열어 확인할 때
 /// H가 터진다. 어차피 배포본에서는 localhost가 아니라 열리지도 않는다.
-const SHIPPED = ['index.html', 'src', 'art', 'audio'];
+const SHIPPED = ['index.html', 'site.webmanifest', 'icons', 'src', 'art', 'audio'];
 
 async function sizeOf(path) {
     const info = await stat(path);

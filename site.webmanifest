@@ -1,0 +1,16 @@
+{
+  "name": "탈출, Together!",
+  "short_name": "탈출 Together",
+  "description": "리트와 미트가 안전하게 도착하도록 도와주세요!",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0d1016",
+  "theme_color": "#0d1016",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

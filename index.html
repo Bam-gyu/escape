@@ -19,9 +19,14 @@
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
-<!-- 탭 아이콘. 파일로 두면 브라우저가 찾다가 404를 남기는데, 그게 콘솔에서
-     진짜 문제처럼 보인다. 주소 안에 그려 넣어 요청 자체를 없앤다. -->
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🌙</text></svg>">
+<!-- 탭 아이콘과 홈 화면 아이콘. 투게더 아이스크림 통이다.
+     주소가 /escape/ 아래라 브라우저가 알아서 찾는 /favicon.ico로는 안 온다.
+     그래서 <b>여기에 적어줘야 한다.</b> -->
+<link rel="icon" href="icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png">
+<link rel="manifest" href="site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap" rel="stylesheet">
@@ -75,6 +80,11 @@
     #gate small { display: block; margin-top: 10px; font-size: 22px; color: #6b7382; }
 
     h1 { margin: 0; font-size: 84px; font-weight: 400; letter-spacing: 2px; }
+
+    /* 제목 위의 마크. 투게더 아이스크림 통이다 — 제목과 같은 것을 가리킨다.
+       화면이 낮으면(가로로 든 폰) 자리를 많이 먹으므로 작아진다. */
+    .mark { width: 128px; height: 128px; margin-bottom: 6px; }
+    @media (max-height: 560px) { .mark { width: 76px; height: 76px; } }
     h2 { margin: 6px 0 0; font-size: 30px; font-weight: 400; color: #9fb0c8; }
 
     button {
@@ -133,12 +143,14 @@
     <canvas id="screen"></canvas>
 
     <div class="overlay" id="gate" hidden>
+        <img class="mark" src="icons/icon-512.png" alt="">
         <h1>탈출, Together!</h1>
         <p>화면을 눌러 시작</p>
         <small>브라우저가 소리를 막고 있습니다</small>
     </div>
 
     <div class="overlay" id="title">
+        <img class="mark" src="icons/icon-512.png" alt="">
         <h1>탈출, Together!</h1>
         <h2>감시를 피해 편의점까지</h2>
         <button type="button" id="start">게임 시작</button>
