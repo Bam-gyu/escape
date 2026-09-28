@@ -312,6 +312,7 @@ function holdHere() {
 }
 
 document.addEventListener('pointerlockchange', () => {
+    const had = game.locked;
     game.locked = document.pointerLockElement === canvas;
 
     // 붙잡은 순간 기다릴 이유가 없어진다. 기다리던 자리에 세우고 곧바로 간다.
@@ -323,7 +324,11 @@ document.addEventListener('pointerlockchange', () => {
 
     // Esc로 풀렸다. 게임 중이었으면 그 자리에서 멈춘다 —
     // 손을 뗀 사이에 죽으면 자기가 뭘 잘못했는지 알 수 없는 죽음이 된다.
-    if (!game.locked && game.screen === 'play' && !game.admin) holdHere();
+    //
+    // <b>잡고 있던 것을 놓쳤을 때만이다.</b> 애초에 못 잡은 것은 놓친 것이 아니다.
+    // 이걸 안 가리면, 잠금을 거절하는 브라우저에서 시작하자마자 한 번 튕긴다 —
+    // 방금 막 시작했는데 "여기로 마우스를 옮기면 시작"이 다시 뜬다.
+    if (had && !game.locked && game.screen === 'play' && !game.admin) holdHere();
 });
 
 document.addEventListener('pointerlockerror', () => { game.locked = false; });
@@ -535,6 +540,14 @@ function update(now) {
     if (state.dead) {
         game.deaths++;
         game.screen = 'dead';
+
+        // <b>들키면 마우스를 놓아준다.</b> 붙잡고 있으면 커서가 사라진 채라
+        // 그만두고 싶어도 탭을 닫을 수가 없다. 게임이 사람을 붙잡아 두는 셈이다.
+        // 다시 누르면 그때 다시 붙잡는다 — 누르는 것이 사람의 손길이니 된다.
+        //
+        // 화면을 먼저 'dead'로 바꾸고 놓는 순서가 중요하다. 반대로 하면
+        // 풀림을 받은 쪽이 아직 'play'인 줄 알고 "그 자리에서 기다리기"로 보낸다.
+        document.exitPointerLock?.();
 
         // 나를 들키게 한 것이 안 보이는 함정이었다면, 이제부터 보인다.
         if (room().hazards[state.killedBy]?.hidden) game.revealed.add(state.killedBy);

@@ -1,4 +1,4 @@
-# 숙소탈출 프로젝트 진입점
+# 탈출, Together! 프로젝트 진입점
 
 @../CLAUDE.md
 @docs/PRD.md
